@@ -47,4 +47,4 @@ or type `<cryptoGX jar file> -help` to get help
 
 # License
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](License) file for more details
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for more details

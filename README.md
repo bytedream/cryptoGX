@@ -41,7 +41,7 @@ Usage AES:
         encrypt: <cryptoGX jar file> AES <key> <salt> encrypt <path of file to encrypt> <encrypted file dest>
         decrypt: <cryptoGX jar file> AES <key> <salt> decrypt <encrypted file path> <decrypted file dest>
 
-Secure delete file: <iterations> <path of file to delete>");
+Secure delete file: <iterations> <path of file to delete>"
 ```
 or type `<cryptoGX jar file> -help` to get help
 

@@ -3,6 +3,8 @@
 - [Introduction](#introduction)
 - [Downloads](#Downloads)
 - [Usage](#Usage)
+- [Known Bugs]()
+- [Limitations](#Limitations)
 - [License](#License)
 
 # Introduction
@@ -10,12 +12,16 @@
 **cryptoGX** is a java based software for en- / decrypting texts or files and secure delete files.
 It was designed to be controlled with a GUI, but can also be used from the command line.
 
-Because the GUI uses javaFX, java version from 1.8.0_40 to 10.* with javaFX support is required (also applies to windows .exe files).
+Because the GUI uses javaFX, java version from 1.8.0_40 to 10.* with javaFX support is required.
+Alternatively you can compile the [source code](#https://github.com/blueShard-dev/cryptoGX/archive/master.zip) with higher
+java version and include [javaFX](#https://openjfx.io/) manually
 
 # Downloads
 
-| 1.11.0 |
-|:-------|
+### [All releases](#https://github.com/blueShard-dev/cryptoGX/releases/)
+
+| Latest release (1.12.0) |
+|:------------------------|
 | [Source code](https://github.com/blueShard-dev/cryptoGX/archive/master.zip) |
 | [Executable jar file](https://dl.dropbox.com/s/1px5dotzyop3rpn/cryptoGX.jar?dl=0) |
 | [Windows portable](https://dl.dropbox.com/s/10jf6cfpnejrvbf/cryptoGX_1.11.0_portable.exe?dl=0) |
@@ -41,10 +47,10 @@ Usage AES:
         encrypt: <cryptoGX jar file> AES <key> <salt> encrypt <path of file to encrypt> <encrypted file dest>
         decrypt: <cryptoGX jar file> AES <key> <salt> decrypt <encrypted file path> <decrypted file dest>
 
-Secure delete file: <iterations> <path of file to delete>
+File secure delete: <cryptoGX jar file> delete <iterations> <path of file to delete>        //for <iterations> the argument 'default' can be used, which is 5
 ```
-or type `<cryptoGX jar file> -help` to get help
+or type `<cryptoGX jar file> help` to get help
 
 # License
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for more details
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](License) file for more details

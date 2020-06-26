@@ -3,8 +3,6 @@
 - [Introduction](#introduction)
 - [Downloads](#Downloads)
 - [Usage](#Usage)
-- [Known Bugs]()
-- [Limitations](#Limitations)
 - [License](#License)
 
 # Introduction

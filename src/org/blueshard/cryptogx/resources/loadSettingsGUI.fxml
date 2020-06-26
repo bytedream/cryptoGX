@@ -13,11 +13,10 @@
             <Image url="@close.png" />
          </image>
       </ImageView>
-      <Text fx:id="loadSettingsText" layoutX="86.0" layoutY="50.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Load settings" />
+      <Text fx:id="loadSettingsText" layoutX="68.0" layoutY="47.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Load settings" textAlignment="CENTER" wrappingWidth="107.38818359375" />
       <ComboBox fx:id="settingsBox" layoutX="24.0" layoutY="72.0" prefHeight="25.0" prefWidth="194.0" />
-      <Text fx:id="passwordText" layoutX="14.0" layoutY="136.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Password" />
-      <PasswordField fx:id="passwordEntryHide" layoutX="79.0" layoutY="119.0" />
-      <TextField fx:id="passwordEntryShow" layoutX="79.0" layoutY="119.0" visible="false" />
+      <PasswordField fx:id="passwordEntryHide" layoutX="16.0" layoutY="118.0" prefHeight="26.0" prefWidth="211.0" promptText="Password" />
+      <TextField fx:id="passwordEntryShow" layoutX="16.0" layoutY="118.0" prefHeight="26.0" prefWidth="211.0" visible="false" />
       <CheckBox fx:id="showPassword" layoutX="14.0" layoutY="154.0" mnemonicParsing="false" text="Show password" />
       <Separator fx:id="separator1" layoutX="16.0" layoutY="181.0" prefHeight="0.0" prefWidth="211.0" />
       <Button fx:id="loadButton" layoutX="29.0" layoutY="193.0" mnemonicParsing="false" text="Load" />

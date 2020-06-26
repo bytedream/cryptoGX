@@ -16,10 +16,6 @@ import javafx.stage.*;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import javax.xml.stream.*;
-import javax.xml.transform.*;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
 import java.io.*;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -31,12 +27,14 @@ import static org.blueshard.cryptogx.Main.*;
 
 /**
  * <p>Class for the user configuration / settings</p>
+ *
+ * @since 1.12.0
  */
-public class Config {
+public class Settings {
 
-    private static double addConfigGUIX, addConfigGUIY;
+    private static double addSettingsGUIX, addSettingsGUIY;
 
-    private static final HashSet<String> protectedConfigNames = new HashSet<>(Arrays.asList("cryptoGX", "config"));
+    private static final HashSet<String> protectedSettingsNames = new HashSet<>(Arrays.asList("cryptoGX", "settings"));
 
     /**
      * <p>Shows a GUI where the user can save settings, which can load later</p>
@@ -44,13 +42,15 @@ public class Config {
      * @param rootWindow from which this GUI will get called
      * @param userSetting
      * @throws IOException
+     *
+     * @since 1.11.0
      */
     public static void addSettingGUI(Window rootWindow, Map<String, String> userSetting) throws IOException {
         Map<String, String> newSettingItems = new HashMap<>();
 
         Stage rootStage = new Stage();
         rootStage.initOwner(rootWindow);
-        Parent addSettingsRoot = FXMLLoader.load(Config.class.getResource("resources/addSettingsGUI.fxml"));
+        Parent addSettingsRoot = FXMLLoader.load(Settings.class.getResource("resources/addSettingsGUI.fxml"));
         rootStage.initStyle(StageStyle.UNDECORATED);
         rootStage.initModality(Modality.WINDOW_MODAL);
         rootStage.setResizable(false);
@@ -60,12 +60,12 @@ public class Config {
         rootStage.setScene(scene);
 
         scene.setOnMouseDragged(event -> {
-            rootStage.setX(event.getScreenX() + addConfigGUIX);
-            rootStage.setY(event.getScreenY() + addConfigGUIY);
+            rootStage.setX(event.getScreenX() + addSettingsGUIX);
+            rootStage.setY(event.getScreenY() + addSettingsGUIY);
         });
         scene.setOnMousePressed(event -> {
-            addConfigGUIX = scene.getX() - event.getSceneX();
-            addConfigGUIY = scene.getY() - event.getSceneY();
+            addSettingsGUIX = scene.getX() - event.getSceneX();
+            addSettingsGUIY = scene.getY() - event.getSceneY();
         });
 
         Thread thread = new Thread(() -> {
@@ -78,12 +78,12 @@ public class Config {
             Platform.runLater(() -> {
                 MenuBar menuBar = (MenuBar) addSettingsRoot.lookup("#menuBar");
                 menuBar.setOnMouseDragged(event -> {
-                    rootStage.setX(event.getScreenX() + addConfigGUIX);
-                    rootStage.setY(event.getScreenY() + addConfigGUIY);
+                    rootStage.setX(event.getScreenX() + addSettingsGUIX);
+                    rootStage.setY(event.getScreenY() + addSettingsGUIY);
                 });
                 menuBar.setOnMousePressed(event -> {
-                    addConfigGUIX = menuBar.getLayoutX() - event.getSceneX();
-                    addConfigGUIY = menuBar.getLayoutY() - event.getSceneY();
+                    addSettingsGUIX = menuBar.getLayoutX() - event.getSceneX();
+                    addSettingsGUIY = menuBar.getLayoutY() - event.getSceneY();
                 });
 
                 ImageView closeButton = (ImageView) addSettingsRoot.lookup("#closeButton");
@@ -96,7 +96,7 @@ public class Config {
                 TextField textSaltEntry = (TextField) addSettingsRoot.lookup("#textSaltEntry");
                 textSaltEntry.setText(userSetting.get("textSalt"));
                 ComboBox textAlgorithmBox = (ComboBox) addSettingsRoot.lookup("#textAlgorithmComboBox");
-                textAlgorithmBox.setItems(FXCollections.observableArrayList(textAlgorithms));
+                textAlgorithmBox.setItems(FXCollections.observableArrayList(Utils.algorithms.keySet()));
                 textAlgorithmBox.setValue(userSetting.get("textAlgorithm"));
 
                 TextField fileEnDecryptKeyEntry = (TextField) addSettingsRoot.lookup("#fileEnDecryptKeyEntry");
@@ -104,7 +104,7 @@ public class Config {
                 TextField fileEnDecryptSaltEntry = (TextField) addSettingsRoot.lookup("#fileEnDecryptSaltEntry");
                 fileEnDecryptSaltEntry.setText(userSetting.get("fileEnDecryptSalt"));
                 ComboBox fileEnDecryptAlgorithmBox = (ComboBox) addSettingsRoot.lookup("#fileEnDecryptAlgorithmComboBox");
-                fileEnDecryptAlgorithmBox.setItems(FXCollections.observableArrayList(fileEnDecryptAlgorithms));
+                fileEnDecryptAlgorithmBox.setItems(FXCollections.observableArrayList(Utils.algorithms.keySet()));
                 fileEnDecryptAlgorithmBox.setValue(userSetting.get("fileEnDecryptAlgorithm"));
 
                 TextField fileDeleteIterationEntry = (TextField) addSettingsRoot.lookup("#fileDeleteIterationsEntry");
@@ -117,35 +117,45 @@ public class Config {
 
                 TextField fileOutputPathEntry = (TextField) addSettingsRoot.lookup("#fileOutputPathEntry");
                 fileOutputPathEntry.setText(userSetting.get("fileOutputPath"));
+                Button fileOutputPathButton = (Button) addSettingsRoot.lookup("#fileOutputPathButton");
+                fileOutputPathButton.setOnAction(event -> {
+                    DirectoryChooser directoryChooser = new DirectoryChooser();
+                    File directory = directoryChooser.showDialog(rootWindow.getScene().getWindow());
+                    try {
+                        fileOutputPathEntry.setText(directory.getAbsolutePath());
+                    } catch (NullPointerException e) {
+                        e.printStackTrace();
+                    }
+                });
                 CheckBox removeFromFileBoxCheckBox = (CheckBox) addSettingsRoot.lookup("#removeFromFileBoxCheckBox");
                 removeFromFileBoxCheckBox.setSelected(Boolean.parseBoolean(userSetting.get("removeFromFileBox")));
                 CheckBox limitNumberOfThreadsCheckBox = (CheckBox) addSettingsRoot.lookup("#limitNumberOfThreadsCheckBox");
                 limitNumberOfThreadsCheckBox.setSelected(Boolean.parseBoolean(userSetting.get("limitNumberOfThreads")));
 
                 PasswordField hiddenPasswordEntry = (PasswordField) addSettingsRoot.lookup("#hiddenPasswordEntry");
-                TextField showedPasswordEntry = (TextField) addSettingsRoot.lookup("#showedPasswordEntry");
+                TextField visiblePasswordEntry = (TextField) addSettingsRoot.lookup("#visiblePasswordEntry");
                 CheckBox showPassword = (CheckBox) addSettingsRoot.lookup("#showPassword");
 
                 showPassword.setOnAction(event -> {
                     if (showPassword.isSelected()) {
-                        showedPasswordEntry.setText(hiddenPasswordEntry.getText());
-                        showedPasswordEntry.setVisible(true);
+                        visiblePasswordEntry.setText(hiddenPasswordEntry.getText());
+                        visiblePasswordEntry.setVisible(true);
                         hiddenPasswordEntry.setVisible(false);
                     } else {
-                        hiddenPasswordEntry.setText(showedPasswordEntry.getText());
+                        hiddenPasswordEntry.setText(visiblePasswordEntry.getText());
                         hiddenPasswordEntry.setVisible(true);
-                        showedPasswordEntry.setVisible(false);
+                        visiblePasswordEntry.setVisible(false);
                     }
                 });
                 CheckBox encryptSettings = (CheckBox) addSettingsRoot.lookup("#encryptSettings");
                 encryptSettings.setOnAction(event -> {
                     if (encryptSettings.isSelected()) {
                         hiddenPasswordEntry.setDisable(false);
-                        showedPasswordEntry.setDisable(false);
+                        visiblePasswordEntry.setDisable(false);
                         showPassword.setDisable(false);
                     } else {
                         hiddenPasswordEntry.setDisable(true);
-                        showedPasswordEntry.setDisable(true);
+                        visiblePasswordEntry.setDisable(true);
                         showPassword.setDisable(true);
                     }
                 });
@@ -153,18 +163,22 @@ public class Config {
                 saveButton.setOnAction(event -> {
                     if (settingsNameEntry.getText().trim().isEmpty()) {
                         warningAlert("Add a name for the setting");
-                    } else if (protectedConfigNames.contains(settingsNameEntry.getText())) {
+                    } else if (protectedSettingsNames.contains(settingsNameEntry.getText())) {
                         warningAlert("Please choose another name for this setting");
-                    } else if (encryptSettings.isSelected()){
+                    } else if (settingsNameEntry.getText().trim().contains(" ")) {
+                        warningAlert("Setting name must not contain free space");
+                    } else if (encryptSettings.isSelected()) {
                         try {
                             EnDecrypt.AES encrypt;
-                            if (!hiddenPasswordEntry.isDisabled()) {
+                            if (!hiddenPasswordEntry.isDisabled() && !hiddenPasswordEntry.getText().trim().isEmpty()) {
                                 encrypt = new EnDecrypt.AES(hiddenPasswordEntry.getText(), new byte[16]);
-                                newSettingItems.put("encryptHash", encrypt.encrypt(hiddenPasswordEntry.getText()));
+                            } else if (!visiblePasswordEntry.getText().trim().isEmpty()) {
+                                encrypt = new EnDecrypt.AES(visiblePasswordEntry.getText(), new byte[16]);
                             } else {
-                                encrypt = new EnDecrypt.AES(showedPasswordEntry.getText(), new byte[16]);
-                                newSettingItems.put("encryptHash", encrypt.encrypt(showedPasswordEntry.getText()));
+                                throw new InvalidKeyException("The key must not be empty");
                             }
+
+                            newSettingItems.put("encrypted", "true");
 
                             newSettingItems.put("textKey", encrypt.encrypt(textKeyEntry.getText()));
                             newSettingItems.put("textSalt", encrypt.encrypt(textSaltEntry.getText()));
@@ -180,15 +194,28 @@ public class Config {
                             newSettingItems.put("removeFromFileBox", encrypt.encrypt(String.valueOf(removeFromFileBoxCheckBox.isSelected())));
                             newSettingItems.put("limitNumberOfThreads", encrypt.encrypt(String.valueOf(limitNumberOfThreadsCheckBox.isSelected())));
 
-                            addSetting(settingsNameEntry.getText(), newSettingItems);
+                            if (!config.isFile()) {
+                                try {
+                                    if (!config.createNewFile()) {
+                                        warningAlert("Couldn't create config file");
+                                    } else {
+                                        addSetting(config, settingsNameEntry.getText().trim(), newSettingItems);
+                                    }
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                    errorAlert("Couldn't create config file", e.getMessage());
+                                }
+                            } else {
+                                addSetting(config, settingsNameEntry.getText().trim(), newSettingItems);
+                            }
 
                             rootStage.close();
-                        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | InvalidKeySpecException e) {
+                        } catch (InvalidKeyException e) {
+                            warningAlert("The key must not be empty");
+                        } catch (NoSuchPaddingException | NoSuchAlgorithmException | IllegalBlockSizeException | BadPaddingException | InvalidKeySpecException e) {
                             e.printStackTrace();
                         }
                     } else {
-                        newSettingItems.put("encryptHash", "");
-
                         newSettingItems.put("textKey", textKeyEntry.getText());
                         newSettingItems.put("textSalt", textSaltEntry.getText());
                         newSettingItems.put("textAlgorithm", textAlgorithmBox.getSelectionModel().getSelectedItem().toString());
@@ -203,7 +230,20 @@ public class Config {
                         newSettingItems.put("removeFromFileBox", String.valueOf(removeFromFileBoxCheckBox.isSelected()));
                         newSettingItems.put("limitNumberOfThreads", String.valueOf(limitNumberOfThreadsCheckBox.isSelected()));
 
-                        addSetting(settingsNameEntry.getText(), newSettingItems);
+                        if (!config.isFile()) {
+                            try {
+                                if (!config.createNewFile()) {
+                                    warningAlert("Couldn't create config file");
+                                } else {
+                                    addSetting(config, settingsNameEntry.getText().trim(), newSettingItems);
+                                }
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                                errorAlert("Couldn't create config file", e.getMessage());
+                            }
+                        } else {
+                            addSetting(config, settingsNameEntry.getText().trim(), newSettingItems);
+                        }
 
                         rootStage.close();
                     }
@@ -221,11 +261,13 @@ public class Config {
      *
      * @param rootWindow from which this GUI will get called
      * @throws IOException
+     *
+     * @since 1.11.0
      */
     public static void exportSettingsGUI(Window rootWindow) throws IOException {
         Stage rootStage = new Stage();
         rootStage.initOwner(rootWindow);
-        Parent exportSettingsRoot = FXMLLoader.load(Config.class.getResource("resources/exportSettingsGUI.fxml"));
+        Parent exportSettingsRoot = FXMLLoader.load(Settings.class.getResource("resources/exportSettingsGUI.fxml"));
         rootStage.initStyle(StageStyle.UNDECORATED);
         rootStage.initModality(Modality.WINDOW_MODAL);
         rootStage.setResizable(false);
@@ -235,12 +277,12 @@ public class Config {
         rootStage.setScene(scene);
 
         scene.setOnMouseDragged(event -> {
-            rootStage.setX(event.getScreenX() + addConfigGUIX);
-            rootStage.setY(event.getScreenY() + addConfigGUIY);
+            rootStage.setX(event.getScreenX() + addSettingsGUIX);
+            rootStage.setY(event.getScreenY() + addSettingsGUIY);
         });
         scene.setOnMousePressed(event -> {
-            addConfigGUIX = scene.getX() - event.getSceneX();
-            addConfigGUIY = scene.getY() - event.getSceneY();
+            addSettingsGUIX = scene.getX() - event.getSceneX();
+            addSettingsGUIY = scene.getY() - event.getSceneY();
         });
 
         Thread thread = new Thread(() -> {
@@ -251,18 +293,18 @@ public class Config {
             }
             MenuBar menuBar = (MenuBar) exportSettingsRoot.lookup("#menuBar");
             menuBar.setOnMouseDragged(event -> {
-                rootStage.setX(event.getScreenX() + addConfigGUIX);
-                rootStage.setY(event.getScreenY() + addConfigGUIY);
+                rootStage.setX(event.getScreenX() + addSettingsGUIX);
+                rootStage.setY(event.getScreenY() + addSettingsGUIY);
             });
             menuBar.setOnMousePressed(event -> {
-                addConfigGUIX = menuBar.getLayoutX() - event.getSceneX();
-                addConfigGUIY = menuBar.getLayoutY() - event.getSceneY();
+                addSettingsGUIX = menuBar.getLayoutX() - event.getSceneX();
+                addSettingsGUIY = menuBar.getLayoutY() - event.getSceneY();
             });
             ImageView closeButton = (ImageView) exportSettingsRoot.lookup("#closeButton");
             closeButton.setOnMouseClicked(event -> rootStage.close());
 
             VBox settingsBox = (VBox) exportSettingsRoot.lookup("#settingsBox");
-            Platform.runLater(() -> readUserSettings().keySet().forEach(s -> {
+            Platform.runLater(() -> readSettings(config).keySet().forEach(s -> {
                 CheckBox newCheckBox = new CheckBox();
                 newCheckBox.setText(s);
                 settingsBox.getChildren().add(newCheckBox);
@@ -273,12 +315,12 @@ public class Config {
                 FileChooser fileChooser = new FileChooser();
                 fileChooser.setTitle("Export settings");
                 fileChooser.setInitialFileName("settings.config");
-                fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Config files", "*.config", "*.xml"),
+                fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Config files", "*.config"),
                         new FileChooser.ExtensionFilter("All files", "*.*"));
                 File file = fileChooser.showSaveDialog(exportSettingsRoot.getScene().getWindow());
                 if (file != null) {
                     TreeMap<String, Map<String, String>> writeInfos = new TreeMap<>();
-                    TreeMap<String, Map<String, String>> settings = readUserSettings();
+                    TreeMap<String, Map<String, String>> settings = readSettings(config);
                     for (int i=0; i<settingsBox.getChildren().size(); i++) {
                         CheckBox checkBox = (CheckBox) settingsBox.getChildren().get(i);
                         if (checkBox.isSelected()) {
@@ -289,7 +331,7 @@ public class Config {
                     if (!file.getAbsolutePath().contains(".")) {
                         file = new File(file.getAbsolutePath() + ".config");
                     }
-                    writeConfig(file, writeInfos);
+                    writeSettings(file, writeInfos);
                 }
             });
         });
@@ -305,30 +347,32 @@ public class Config {
      * @param rootWindow from which this GUI will get called
      * @return the settings that the user has chosen
      * @throws IOException
+     *
+     * @since 1.11.0
      */
     public static TreeMap<String, Map<String, String>> loadSettingsGUI(Window rootWindow) throws IOException {
         Button[] outerLoadButton = new Button[1];
         HashMap<String, String> setting = new HashMap<>();
-        TreeMap<String, Map<String, String>> settingItems = readUserSettings();
+        TreeMap<String, Map<String, String>> settingItems = readSettings(config);
         TreeMap<String, Map<String, String>> returnItems = new TreeMap<>();
 
         Stage rootStage = new Stage();
         rootStage.initOwner(rootWindow);
-        AnchorPane loadSettingsRoot = FXMLLoader.load(Config.class.getResource("resources/loadSettingsGUI.fxml"));
+        AnchorPane loadSettingsRoot = FXMLLoader.load(Settings.class.getResource("resources/loadSettingsGUI.fxml"));
         rootStage.initStyle(StageStyle.UNDECORATED);
         rootStage.initModality(Modality.WINDOW_MODAL);
         rootStage.setResizable(false);
         rootStage.setTitle("cryptoGX");
-        rootStage.getIcons().add(new Image(Config.class.getResource("resources/cryptoGX.png").toExternalForm()));
+        rootStage.getIcons().add(new Image(Settings.class.getResource("resources/cryptoGX.png").toExternalForm()));
         Scene scene = new Scene(loadSettingsRoot, 242, 235);
 
         scene.setOnMouseDragged(event -> {
-            rootStage.setX(event.getScreenX() + addConfigGUIX);
-            rootStage.setY(event.getScreenY() + addConfigGUIY);
+            rootStage.setX(event.getScreenX() + addSettingsGUIX);
+            rootStage.setY(event.getScreenY() + addSettingsGUIY);
         });
         scene.setOnMousePressed(event -> {
-            addConfigGUIX = scene.getX() - event.getSceneX();
-            addConfigGUIY = scene.getY() - event.getSceneY();
+            addSettingsGUIX = scene.getX() - event.getSceneX();
+            addSettingsGUIY = scene.getY() - event.getSceneY();
         });
 
         scene.setOnKeyReleased(event -> {
@@ -346,12 +390,12 @@ public class Config {
             Platform.runLater(() -> {
                 MenuBar menuBar = (MenuBar) loadSettingsRoot.lookup("#menuBar");
                 menuBar.setOnMouseDragged(event -> {
-                    rootStage.setX(event.getScreenX() + addConfigGUIX);
-                    rootStage.setY(event.getScreenY() + addConfigGUIY);
+                    rootStage.setX(event.getScreenX() + addSettingsGUIX);
+                    rootStage.setY(event.getScreenY() + addSettingsGUIY);
                 });
                 menuBar.setOnMousePressed(event -> {
-                    addConfigGUIX = menuBar.getLayoutX() - event.getSceneX();
-                    addConfigGUIY = menuBar.getLayoutY() - event.getSceneY();
+                    addSettingsGUIX = menuBar.getLayoutX() - event.getSceneX();
+                    addSettingsGUIY = menuBar.getLayoutY() - event.getSceneY();
                 });
 
                 ImageView closeButton = (ImageView) loadSettingsRoot.lookup("#closeButton");
@@ -360,8 +404,6 @@ public class Config {
                 }
 
                 closeButton.setOnMouseClicked(event -> {
-                    setting.put("encryptHash", configDefaultEncryptHash);
-
                     setting.put("textKey", configDefaultTextKey);
                     setting.put("textSalt", configDefaultTextSalt);
                     setting.put("textAlgorithm", configDefaultTextAlgorithm);
@@ -400,7 +442,7 @@ public class Config {
                 ComboBox settingsBox = (ComboBox) loadSettingsRoot.lookup("#settingsBox");
                 settingsBox.setItems(FXCollections.observableArrayList(settingItems.keySet()));
                 settingsBox.setValue(settingItems.firstKey());
-                if (settingItems.firstEntry().getValue().get("encryptHash").trim().isEmpty()) {
+                if (!Boolean.parseBoolean(settingItems.firstEntry().getValue().get("encrypted").trim())) {
                     keyHideEntry.clear();
                     keyHideEntry.setDisable(true);
                     keyShowEntry.setDisable(true);
@@ -408,7 +450,7 @@ public class Config {
                 }
                 settingsBox.setOnAction(event -> {
                     try {
-                        if (settingItems.get(settingsBox.getSelectionModel().getSelectedItem().toString()).get("encryptHash").trim().isEmpty()) {
+                        if (!Boolean.parseBoolean(settingItems.get(settingsBox.getSelectionModel().getSelectedItem().toString()).get("encrypted").trim())) {
                             keyHideEntry.clear();
                             keyHideEntry.setDisable(true);
                             keyShowEntry.clear();
@@ -431,8 +473,6 @@ public class Config {
                     String settingName = settingsBox.getSelectionModel().getSelectedItem().toString();
                     Map<String, String> selectedSetting = settingItems.get(settingName);
                     if (keyHideEntry.isDisabled() && showPassword.isDisabled() && showPassword.isDisabled()) {
-                        setting.put("encryptHash", "");
-
                         setting.put("textKey", selectedSetting.get("textKey"));
                         setting.put("textSalt", selectedSetting.get("textSalt"));
                         setting.put("textAlgorithm", selectedSetting.get("textAlgorithm"));
@@ -458,33 +498,29 @@ public class Config {
                             decryptSetting = new EnDecrypt.AES(keyShowEntry.getText(), new byte[16]);
                         }
                         try {
-                            if (keyHideEntry.isVisible() && !decryptSetting.encrypt(keyHideEntry.getText()).equals(settingItems.get(settingsBox.getSelectionModel().getSelectedItem().toString()).get("encryptHash").trim())) {
-                                warningAlert("Wrong key is given");
-                            } else if (keyShowEntry.isVisible() && !decryptSetting.encrypt(keyShowEntry.getText()).equals(settingItems.get(settingsBox.getSelectionModel().getSelectedItem().toString()).get("encryptHash").trim())) {
-                                warningAlert("Wrong key is given");
-                            } else {
-                                Map<String, String> selectedEncryptedSetting = settingItems.get(settingName);
-                                setting.put("textKey", decryptSetting.decrypt(selectedEncryptedSetting.get("textKey")));
-                                setting.put("textSalt", decryptSetting.decrypt(selectedEncryptedSetting.get("textSalt")));
-                                setting.put("textAlgorithm", decryptSetting.decrypt(selectedEncryptedSetting.get("textAlgorithm")));
+                            Map<String, String> selectedEncryptedSetting = settingItems.get(settingName);
+                            setting.put("textKey", decryptSetting.decrypt(selectedEncryptedSetting.get("textKey")));
+                            setting.put("textSalt", decryptSetting.decrypt(selectedEncryptedSetting.get("textSalt")));
+                            setting.put("textAlgorithm", decryptSetting.decrypt(selectedEncryptedSetting.get("textAlgorithm")));
 
-                                setting.put("fileEnDecryptKey", decryptSetting.decrypt(selectedEncryptedSetting.get("fileEnDecryptKey")));
-                                setting.put("fileEnDecryptSalt", decryptSetting.decrypt(selectedEncryptedSetting.get("fileEnDecryptSalt")));
-                                setting.put("fileEnDecryptAlgorithm", decryptSetting.decrypt(selectedEncryptedSetting.get("fileEnDecryptAlgorithm")));
+                            setting.put("fileEnDecryptKey", decryptSetting.decrypt(selectedEncryptedSetting.get("fileEnDecryptKey")));
+                            setting.put("fileEnDecryptSalt", decryptSetting.decrypt(selectedEncryptedSetting.get("fileEnDecryptSalt")));
+                            setting.put("fileEnDecryptAlgorithm", decryptSetting.decrypt(selectedEncryptedSetting.get("fileEnDecryptAlgorithm")));
 
-                                setting.put("fileDeleteIterations", String.valueOf(Integer.parseInt(decryptSetting.decrypt(selectedEncryptedSetting.get("fileDeleteIterations")))));
+                            setting.put("fileDeleteIterations", String.valueOf(Integer.parseInt(decryptSetting.decrypt(selectedEncryptedSetting.get("fileDeleteIterations")))));
 
-                                setting.put("fileOutputPath", decryptSetting.decrypt(selectedEncryptedSetting.get("fileOutputPath")));
-                                setting.put("removeFromFileBox", decryptSetting.decrypt(selectedEncryptedSetting.get("removeFromFileBox")));
-                                setting.put("limitNumberOfThreads", decryptSetting.decrypt(selectedEncryptedSetting.get("limitNumberOfThreads")));
+                            setting.put("fileOutputPath", decryptSetting.decrypt(selectedEncryptedSetting.get("fileOutputPath")));
+                            setting.put("removeFromFileBox", decryptSetting.decrypt(selectedEncryptedSetting.get("removeFromFileBox")));
+                            setting.put("limitNumberOfThreads", decryptSetting.decrypt(selectedEncryptedSetting.get("limitNumberOfThreads")));
 
-                                returnItems.put(settingsBox.getSelectionModel().getSelectedItem().toString(), setting);
+                            returnItems.put(settingsBox.getSelectionModel().getSelectedItem().toString(), setting);
 
-                                rootStage.close();
-                            }
-                        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | InvalidKeySpecException e) {
-                            e.printStackTrace();
+                            rootStage.close();
+                        } catch (InvalidKeyException e) {
                             warningAlert("Wrong key is given");
+                        } catch (NoSuchPaddingException | NoSuchAlgorithmException | IllegalBlockSizeException | BadPaddingException | InvalidKeySpecException e) {
+                            e.printStackTrace();
+                            warningAlert("Wrong key is given or the config wasn't\nsaved correctly");
                         }
                     }
                 });
@@ -497,7 +533,7 @@ public class Config {
                     Alert deleteQuestion = new Alert(Alert.AlertType.CONFIRMATION, "Delete " + settingsBox.getSelectionModel().getSelectedItem().toString() + "?", ButtonType.OK, ButtonType.CANCEL);
                     deleteQuestion.initStyle(StageStyle.UNDECORATED);
                     deleteQuestion.setTitle("Confirmation");
-                    ((Stage) deleteQuestion.getDialogPane().getScene().getWindow()).getIcons().add(new Image(Config.class.getResource("resources/cryptoGX.png").toExternalForm()));
+                    ((Stage) deleteQuestion.getDialogPane().getScene().getWindow()).getIcons().add(new Image(Settings.class.getResource("resources/cryptoGX.png").toExternalForm()));
 
                     Scene window = deleteQuestion.getDialogPane().getScene();
 
@@ -512,24 +548,28 @@ public class Config {
 
                     Optional<ButtonType> result = deleteQuestion.showAndWait();
                     if (result.get() == ButtonType.OK) {
-                        deleteUserSetting(settingsBox.getSelectionModel().getSelectedItem().toString());
-                        settingItems.clear();
-                        settingItems.putAll(readUserSettings());
-                        if (settingItems.size() == 0) {
-                            for (int i=0; i<100; i++) {
+                        if (settingItems.size() - 1 <= 0) {
+                            for (int i = 0; i < 100; i++) {
                                 if (config.isFile()) {
-                                    if (config.delete()) {
+                                    try {
+                                        SecureDelete.deleteFile(config, 5, new byte[64]);
                                         isConfig = false;
                                         rootStage.close();
                                         break;
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
                                     }
                                 }
                             }
                             rootStage.close();
-                            return;
+                        } else if (deleteSetting(config, settingsBox.getSelectionModel().getSelectedItem().toString())) {
+                            settingItems.remove(settingsBox.getSelectionModel().getSelectedItem().toString());
+
+                            settingsBox.setItems(FXCollections.observableArrayList(settingItems.keySet()));
+                            settingsBox.setValue(settingItems.firstKey());
+                        } else {
+                            warningAlert("Couldn't delete setting '" + settingsBox.getSelectionModel().getSelectedItem().toString() + "'");
                         }
-                        settingsBox.setItems(FXCollections.observableArrayList(settingItems.keySet()));
-                        settingsBox.setValue(settingItems.firstKey());
                     }
                 });
             });
@@ -547,242 +587,152 @@ public class Config {
      * <p>Shows a GUI where the user can save the current settings</p>
      *
      * @param settingName name of the new setting
-     * @param userSetting the current settings
-     */
-    public static void addSetting(String settingName, Map<String, String> userSetting) {
-        TreeMap<String, Map<String, String>> newConfig = new TreeMap<>(readUserSettings());
-        newConfig.put(settingName, userSetting);
-        writeConfig(newConfig);
-    }
-
-    /**
-     * <p>Shows a GUI where the user can save the current settings</p>
+     * @param newSetting is the new setting key value pair
      *
-     * @param settingName name of the new setting
-     * @param userSetting the current settings
-     * @param encryptPassword to encrypt the settings
+     * @since 1.12.0
      */
-    public static void addSetting(String settingName, Map<String, String> userSetting, String encryptPassword) {
-        TreeMap<String, Map<String, String>> newConfig = new TreeMap<>(readUserSettings());
-        newConfig.put(settingName, userSetting);
-        writeConfig(newConfig, Collections.singletonMap(settingName, encryptPassword));
+    public static void addSetting(File file, String settingName, Map<String, String> newSetting) {
+        TreeMap<String, Map<String, String>> settings = readSettings(file);
+        settings.put(settingName, newSetting);
+        writeSettings(file, settings);
     }
 
     /**
      * <p>Deletes a saved setting</p>
      *
-     * @param name of the setting
+     * @param settingName of the setting
      * @return if the setting could be found
+     *
+     * @since 1.12.0
      */
-    public static boolean deleteUserSetting(String name) {
-        TreeMap<String, Map<String, String>> newSetting = new TreeMap<>();
-        TreeMap<String, Map<String, String>> oldSetting = readUserSettings();
+    public static boolean deleteSetting(File file, String settingName) {
+        StringBuilder newConfig = new StringBuilder();
+        boolean delete = false;
         boolean found = false;
 
-        for (Map.Entry<String, Map<String, String>> entry: oldSetting.entrySet()) {
-            if (!entry.getKey().equals(name)) {
-                newSetting.put(entry.getKey(), entry.getValue());
-            } else {
-                found = true;
+        try {
+            BufferedReader configReader = new BufferedReader(new FileReader(file));
+
+            String line;
+
+            while ((line = configReader.readLine()) != null) {
+                line = line.trim();
+
+                if (line.startsWith("[") && line.endsWith("]")) {
+                    if (line.replace("[", "").replace("]", "").split(" ")[0].equals(settingName)) {
+                        delete = true;
+                        found = true;
+                    } else if (delete) {
+                        delete = false;
+                        newConfig.append(line).append("\n");
+                    } else {
+                        newConfig.append(line).append("\n");
+                    }
+                } else if (!delete) {
+                    newConfig.append(line).append("\n");
+                }
             }
+
+            configReader.close();
+
+            BufferedWriter configFile = new BufferedWriter(new FileWriter(file));
+            configFile.write(newConfig.toString());
+            configFile.newLine();
+
+            configFile.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        writeConfig(newSetting);
+
         return found;
     }
 
-    public static TreeMap<String, Map<String, String>> readUserSettings() {
-        return readUserSettings(config);
-    }
-
     /**
-     * @see Config#readUserSettings(String)
+     * <p>Reads all settings saved in a file</>
+     *
+     * @param file from which the settings should be read from
+     * @return the settings
+     *
+     * @since 1.12.0
      */
-    public static TreeMap<String, Map<String, String>> readUserSettings(File file) {
-        TreeMap<String, Map<String, String>> rootInfos = new TreeMap<>();
+    public static TreeMap<String, Map<String, String>> readSettings(File file) {
+        TreeMap<String, Map<String, String>> returnMap = new TreeMap<>();
+        String settingName = null;
+        Map<String, String> settingValues = new HashMap<>();
+
         try {
-            XMLInputFactory xmlInputFactory = XMLInputFactory.newFactory();
-            XMLStreamReader xmlStreamReader;
-            try {
-                xmlStreamReader = xmlInputFactory.createXMLStreamReader(new FileInputStream(file));
-            } catch (FileNotFoundException e) {
-                return rootInfos;
-            }
+            BufferedReader configReader = new BufferedReader(new FileReader(file));
 
-            HashMap<String, String> infos = new HashMap<>();
+            String line;
 
-            String infoName = null;
-            StringBuilder infoCharacters = new StringBuilder();
-            String rootName = null;
+            while ((line = configReader.readLine()) != null) {
 
-            while (xmlStreamReader.hasNext()) {
-
-                int eventType = xmlStreamReader.next();
-
-                switch (eventType) {
-                    case XMLStreamReader.START_ELEMENT:
-                        String startTag = xmlStreamReader.getLocalName().trim();
-                        if (startTag != null) {
-                            if (protectedConfigNames.contains(startTag)) {
-                                continue;
-                            } else if (rootName == null) {
-                                rootName = startTag;
-                            } else {
-                                infoName = startTag;
-                            }
-                        }
-                        break;
-                    case XMLStreamReader.CHARACTERS:
-                        if (infoName != null) {
-                            if (!xmlStreamReader.getText().trim().equals("")) {
-                                infoCharacters.append(xmlStreamReader.getText());
-                            }
-                        }
-                        break;
-                    case XMLStreamReader.END_ELEMENT:
-                        String endTag = xmlStreamReader.getLocalName().trim();
-                        if (endTag != null) {
-                            if (protectedConfigNames.contains(endTag)) {
-                                continue;
-                            } else if (endTag.equals(rootName)) {
-                                rootInfos.put(rootName, infos);
-                                rootName = null;
-                                infos = new HashMap<>();
-                                infoCharacters = new StringBuilder();
-                            } else {
-                                infos.put(infoName, infoCharacters.toString());
-                                infoName = null;
-                                infoCharacters = new StringBuilder();
-                            }
-                        }
-                        break;
+                if (line.isEmpty()) {
+                    continue;
+                } else if (line.startsWith("[") && line.endsWith("]")) {
+                    if (settingName != null) {
+                        returnMap.put(settingName, settingValues);
+                        settingValues = new HashMap<>();
+                    }
+                    String[] newSetting = line.replace("[", "").replace("]", "").split(" ");
+                    settingName = newSetting[0].trim();
+                    String[] encoded = newSetting[1].split("=");
+                    settingValues.put("encrypted", encoded[1]);
+                } else {
+                    String[] keyValue = line.split("=");
+                    try {
+                        settingValues.put(keyValue[0], keyValue[1]);
+                    } catch (IndexOutOfBoundsException e) {
+                        settingValues.put(keyValue[0], "");
+                    }
                 }
             }
-            xmlStreamReader.close();
-        } catch (XMLStreamException e) {
+
+            if (settingName != null) {
+                returnMap.put(settingName, settingValues);
+            }
+
+            configReader.close();
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
+            warningAlert("Couldn't find file '" + file.getAbsolutePath() + "'"); // this should never raise
+        } catch (IOException e) {
+            e.printStackTrace();
+            errorAlert("An IO Exception occurred", e.getMessage());
         }
-        System.out.println(rootInfos);
 
-        return rootInfos;
-    }
-
-    /**
-     * <p>Shows a GUI where the user can choose and load saved settings </p>
-     *
-     * @param filename of the file with the settings
-     * @return the setting that the user has chosen
-     */
-    public static TreeMap<String, Map<String, String>> readUserSettings(String filename) {
-        return readUserSettings(new File(filename));
-    }
-
-    /**
-     * <p>Writes settings (could be more than one) to the pre-defined config file</p>
-     *
-     * @see Config#writeConfig(File, TreeMap, Map)
-     */
-    public static void writeConfig(TreeMap<String, Map<String, String>> userSettings) {
-        writeConfig(config, userSettings, null);
-    }
-
-    /**
-     * <p>Writes settings (could be more than one) to the pre-defined config file</p>
-     *
-     * @see Config#writeConfig(File, TreeMap, Map)
-     */
-    public static void writeConfig(TreeMap<String, Map<String, String>> userSettings, Map<String, String> encryptedSettings) {
-        writeConfig(config, userSettings, encryptedSettings);
-    }
-
-    /**
-     * <p>Writes settings (could be more than one) to the pre-defined config file</p>
-     *
-     * @see Config#writeConfig(String, TreeMap, Map)
-     */
-    public static void writeConfig(String filename, TreeMap<String, Map<String, String>> userSettings) {
-        writeConfig(filename, userSettings, null);
-    }
-
-    /**
-     * <p>Writes settings (could be more than one) to the pre-defined config file</p>
-     *
-     * @see Config#writeConfig(File, TreeMap, Map)
-     */
-    public static void writeConfig(File file, TreeMap<String, Map<String, String>> userSettings) {
-        writeConfig(file, userSettings, null);
-    }
-
-    /**
-     * <p>Writes settings (could be more than one) to a file</p>
-     *
-     * @see Config#writeConfig(String, TreeMap, Map)
-     */
-    public static void writeConfig(String filename, TreeMap<String, Map<String, String>> userSettings, Map<String, String> encryptedSettings) {
-        writeConfig(new File(filename), userSettings, encryptedSettings);
+        return returnMap;
     }
 
     /**
      * <p>Writes settings (could be more than one) to a file</p>
      *
      * @param file where the settings should be written in
-     * @param userSettings of the user
-     * @param encryptedSettings says which settings from {@param userSettings} should be encrypted with a password
+     * @param settings of the user
+     *
+     * @since 1.12.0
      */
-    public static void writeConfig(File file, TreeMap<String, Map<String, String>> userSettings, Map<String, String> encryptedSettings) {
-        EnDecrypt.AES encryptSetting;
-        StringWriter stringWriter = new StringWriter();
-
-        if (encryptedSettings == null) {
-            encryptedSettings = new HashMap<>();
-        }
-
+    public static void writeSettings(File file, TreeMap<String, Map<String, String>> settings) {
         try {
-            XMLOutputFactory xmlOutputFactory = XMLOutputFactory.newInstance();
-            XMLStreamWriter xmlStreamWriter = xmlOutputFactory.createXMLStreamWriter(stringWriter);
+            BufferedWriter configWriter = new BufferedWriter(new FileWriter(file));
 
-            xmlStreamWriter.writeStartDocument();
-            xmlStreamWriter.writeStartElement("cryptoGX");
-            for (Map.Entry<String, Map<String, String>> settingElement: userSettings.entrySet()) {
-                xmlStreamWriter.writeStartElement(settingElement.getKey());
-                if (encryptedSettings.containsKey(settingElement.getKey())) {
-                    encryptSetting = new EnDecrypt.AES(settingElement.getKey(), new byte[16]);
-                    for (Map.Entry<String, String> entry: settingElement.getValue().entrySet()) {
-                        xmlStreamWriter.writeStartElement(entry.getKey());
-                        xmlStreamWriter.writeCharacters(encryptSetting.encrypt(entry.getValue()));
-                        xmlStreamWriter.writeEndElement();
-                    }
-                } else {
-                    for (Map.Entry<String, String> entry: settingElement.getValue().entrySet()) {
-                        xmlStreamWriter.writeStartElement(entry.getKey());
-                        xmlStreamWriter.writeCharacters(entry.getValue());
-                        xmlStreamWriter.writeEndElement();
+            for (Map.Entry<String, Map<String, String>> settingElement: settings.entrySet()) {
+                    configWriter.write("[" + settingElement.getKey() + " encrypted=" + Boolean.parseBoolean(settingElement.getValue().get("encrypted")) + "]");
+                    configWriter.newLine();
+                    for (Map.Entry<String, String> entry : settingElement.getValue().entrySet()) {
+                        String key = entry.getKey();
+                        if (!key.equals("encrypted")) {
+                            configWriter.write(entry.getKey() + "=" + entry.getValue());
+                            configWriter.newLine();
+                        }
                     }
                 }
-                xmlStreamWriter.writeEndElement();
-            }
-            xmlStreamWriter.writeEndElement();
-            xmlStreamWriter.writeEndDocument();
+                configWriter.newLine();
 
-            //prettify
-
-            Source xmlInput = new StreamSource(new StringReader(stringWriter.toString()));
-            StringWriter prettifyStringWriter = new StringWriter();
-            StreamResult xmlOutput = new StreamResult(prettifyStringWriter);
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            transformerFactory.setAttribute("indent-number", 2);
-            Transformer transformer = transformerFactory.newTransformer();
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-            transformer.transform(xmlInput, xmlOutput);
-
-            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(file));
-            for (String s: prettifyStringWriter.getBuffer().toString().split(System.lineSeparator())) {
-                bufferedWriter.write(s);
-                bufferedWriter.newLine();
-            }
-            bufferedWriter.close();
-        } catch (XMLStreamException | IOException | NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | InvalidKeySpecException | TransformerException e) {
+            configWriter.close();
+        } catch (IOException e) {
             e.printStackTrace();
+            errorAlert("An error occurred while saving the settings", e.getMessage());
         }
     }
 

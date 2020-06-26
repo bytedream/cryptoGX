@@ -35,6 +35,10 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.CopyOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -43,7 +47,7 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.blueshard.cryptogx.Config.*;
+import static org.blueshard.cryptogx.Settings.*;
 import static org.blueshard.cryptogx.Main.*;
 
 public class Controller implements Initializable {
@@ -54,35 +58,33 @@ public class Controller implements Initializable {
     private boolean textLoading = false;
     private boolean fileEnDecryptLoading = false;
     private boolean fileDeleteLoading = false;
-    private AtomicInteger textThreads = new AtomicInteger(0);
-    private AtomicInteger totalThreads = new AtomicInteger(0);
-    private int tooltipShow = 15;
+    private final AtomicInteger textThreads = new AtomicInteger(0);
+    private final AtomicInteger totalThreads = new AtomicInteger(0);
+    private final int tooltipShow = 15;
     private final int DATAFILEURL = 2;
     private final int FILEFILEURL = 1;
     private final int NONSPECIFICFILEURL = 0;
-    private final int IMAGE = 78345;
-    private final int FILE = 23902;
-    private final int UNKNOWN = 12345;
+    private final byte[] buffer = new byte[64];
     private final KeyCombination paste = new KeyCodeCombination(KeyCode.V, KeyCombination.CONTROL_DOWN);
     private final Image loadingImage = new Image(getClass().getResource("resources/loading.gif").toExternalForm());
 
     private HashMap<String, String> currentConfigSettings = new HashMap<>();
 
-    private HashMap<Label, ArrayList<File>> enDecryptInputOutputFiles = new HashMap<>();
-    private HashMap<Label, ArrayList<Object>> enDecryptInputOutputInternetFiles = new HashMap<>();
-    private HashMap<Label, BufferedImage> enDecryptInputOutputClipboardImages = new HashMap<>();
-    private HashMap<Label, File> deleteInputFiles = new HashMap<>();
-    private List<Thread> fileEnDecryptThreads = Collections.synchronizedList(new ArrayList<>());
-    private List<Thread> fileDeleteThreads = Collections.synchronizedList(new ArrayList<>());
+    private final HashMap<Label, ArrayList<File>> enDecryptInputOutputFiles = new HashMap<>();
+    private final HashMap<Label, ArrayList<Object>> enDecryptInputOutputInternetFiles = new HashMap<>();
+    private final HashMap<Label, BufferedImage> enDecryptInputOutputClipboardImages = new HashMap<>();
+    private final HashMap<Label, File> deleteInputFiles = new HashMap<>();
+    private final List<Thread> fileEnDecryptThreads = Collections.synchronizedList(new ArrayList<>());
+    private final List<Thread> fileDeleteThreads = Collections.synchronizedList(new ArrayList<>());
 
-    private ContextMenu fileEnDecryptInputContextMenu = new ContextMenu();
-    private ContextMenu fileDeleteInputContextMenu = new ContextMenu();
+    private final ContextMenu fileEnDecryptInputContextMenu = new ContextMenu();
+    private final ContextMenu fileDeleteInputContextMenu = new ContextMenu();
     private Label choosedLabel = null;
     private String choosedLabelType = null;
-    private MenuItem fileOutputFileChangeDest = new MenuItem("Change output file");
-    private MenuItem getChoosedLabelInputFileFolder = new MenuItem("Open source directory");
-    private MenuItem getChoosedLabelOutputFileFolder = new MenuItem("Open source directory");
-    private Tooltip tooltip = new Tooltip();
+    private final MenuItem fileOutputFileChangeDest = new MenuItem("Change output file");
+    private final MenuItem getChoosedLabelInputFileFolder = new MenuItem("Open source directory");
+    private final MenuItem getChoosedLabelOutputFileFolder = new MenuItem("Open source directory");
+    private final Tooltip tooltip = new Tooltip();
 
     public AnchorPane rootWindow;
 
@@ -101,6 +103,7 @@ public class Controller implements Initializable {
     public ImageView fileDeleteLoadingImage;
 
     public Menu settingsMenu;
+    public Menu helpMenu;
 
     public MenuBar menubar;
 
@@ -194,11 +197,13 @@ public class Controller implements Initializable {
         tooltip.hide();
     }
 
-    //-----root-----//
+    //-----menu / close bar-----//
 
     /**
      * <p>Closed the application.
      * Get called if red close button is pressed</p>
+     *
+     * @since 1.0.0
      */
     public void closeApplication() {
         Stage rootStage = (Stage) rootWindow.getScene().getWindow();
@@ -209,6 +214,8 @@ public class Controller implements Initializable {
     /**
      * <p>Hides the application.
      * Get called if the green minimize button is pressed</p>
+     *
+     * @since 1.0.0
      */
     public void minimizeApplication() {
         Stage rootStage = (Stage) rootWindow.getScene().getWindow();
@@ -220,6 +227,8 @@ public class Controller implements Initializable {
     /**
      * <p>Encrypt text in {@link Controller#textDecryptedEntry}.
      * Get called if the text 'Encrypt' button is pressed</p>
+     *
+     * @since 1.0.0
      */
     public void textEncryptButton() {
         final byte[] salt;
@@ -243,12 +252,11 @@ public class Controller implements Initializable {
                 }
             }
             totalThreads.getAndIncrement();
-            EnDecrypt.AES encrypt = new EnDecrypt.AES(textKeyEntry.getText(), salt);
+            String textAlgorithm = textAlgorithmBox.getSelectionModel().getSelectedItem();
+            EnDecrypt.AES encrypt = new EnDecrypt.AES(textKeyEntry.getText(), salt, Integer.parseInt(textAlgorithm.substring(textAlgorithm.indexOf('-') + 1)));
             try {
                 String encryptedText = encrypt.encrypt(textDecryptedEntry.getText());
-                Platform.runLater(() -> {
-                    textEncryptedEntry.setText(encryptedText);
-                });
+                Platform.runLater(() -> textEncryptedEntry.setText(encryptedText));
             } catch (NoSuchPaddingException | InvalidKeySpecException | InvalidKeyException | NoSuchAlgorithmException | BadPaddingException e) {
                 e.printStackTrace();
             } catch (IllegalArgumentException | IllegalBlockSizeException e) {
@@ -270,6 +278,8 @@ public class Controller implements Initializable {
     /**
      * <p>Decrypt text in {@link Controller#textEncryptedEntry}.
      * Get called if the text 'Decrypt' button is pressed</p>
+     *
+     * @since 1.0.0
      */
     public void textDecryptButton() {
         final byte[] salt;
@@ -293,12 +303,11 @@ public class Controller implements Initializable {
                 }
             }
             totalThreads.getAndIncrement();
-            EnDecrypt.AES decrypt = new EnDecrypt.AES(textKeyEntry.getText(), salt);
+            String textAlgorithm = textAlgorithmBox.getSelectionModel().getSelectedItem();
+            EnDecrypt.AES decrypt = new EnDecrypt.AES(textKeyEntry.getText(), salt, Integer.parseInt(textAlgorithm.substring(textAlgorithm.indexOf('-') + 1)));
             try {
                 String DecryptedText = decrypt.decrypt(textEncryptedEntry.getText());
-                Platform.runLater(() -> {
-                    textDecryptedEntry.setText(DecryptedText);
-                });
+                Platform.runLater(() -> textDecryptedEntry.setText(DecryptedText));
             } catch (NoSuchPaddingException | InvalidKeySpecException | InvalidKeyException | NoSuchAlgorithmException e) {
                 e.printStackTrace();
             } catch (BadPaddingException e) {
@@ -335,6 +344,8 @@ public class Controller implements Initializable {
      * <p>Synchronized method to get the number of threads which en- / decrypt files</p>
      *
      * @return number of en- / decryption threads
+     *
+     * @since 1.2.0
      */
     private synchronized int getFileEnDecryptThreadsSize() {
         return fileEnDecryptThreads.size();
@@ -344,6 +355,8 @@ public class Controller implements Initializable {
      * <p>Synchronized method to add a thread to the file en- / decryption list of current running file en- / decryption threads</p>
      *
      * @param thread that should be added
+     *
+     * @since 1.2.0
      */
     private synchronized void addFileEnDecryptThread(Thread thread) {
         fileEnDecryptThreads.add(thread);
@@ -353,6 +366,8 @@ public class Controller implements Initializable {
      * <p>Synchronized method to remove a thread from the file en- / decryption list of current running file en- / decryption threads</p>
      *
      * @param thread that should be removed
+     *
+     * @since 1.2.0
      */
     private synchronized void removeFileEnDecryptThread(Thread thread) {
         fileEnDecryptThreads.remove(thread);
@@ -362,6 +377,8 @@ public class Controller implements Initializable {
      * <p>Adds a file for en- / decryption</p>
      *
      * @param file that should be added
+     *
+     * @since 1.0.0
      */
     private void fileEnDecryptAddFile(File file) {
         for (Label l: enDecryptInputOutputFiles.keySet()) {
@@ -384,45 +401,29 @@ public class Controller implements Initializable {
 
         File encryptFile;
         File decryptFile;
+        String fileOutputPath = file.getParent() + "/";;
+        String fileEnding;
         ArrayList<File> inputOutputList = new ArrayList<>();
-        if (currentConfigSettings.get("fileOutputPath").trim().isEmpty()) {
-            encryptFile = new File(fileAbsolutePath + ".cryptoGX");
-            while (encryptFile.isFile()) {
-                encryptFile = new File(encryptFile.getAbsolutePath() + ".cryptoGX");
-            }
-            if (fileAbsolutePath.endsWith(".cryptoGX")) {
-                decryptFile = new File(fileAbsolutePath.substring(0, fileAbsolutePath.length() - 9));
-                if (decryptFile.isFile()) {
-                    while (decryptFile.isFile()) {
-                        decryptFile = new File(decryptFile.getAbsolutePath() + ".cryptoGX");
-                    }
-                }
-            } else {
-                decryptFile = new File(fileAbsolutePath + ".cryptoGX");
-                while (decryptFile.isFile()) {
-                    decryptFile = new File(decryptFile.getAbsolutePath() + ".cryptoGX");
-                }
-            }
-        } else {
-            encryptFile = new File(currentConfigSettings.get("fileOutputPath").trim() + "/" + fileName + ".cryptoGX");
-            while (encryptFile.isFile()) {
-                encryptFile = new File(encryptFile.getAbsolutePath() + ".cryptoGX");
-            }
-            if (fileAbsolutePath.endsWith(".cryptoGX")) {
-                decryptFile = new File(currentConfigSettings.get("fileOutputPath").trim() + "/" + fileName.substring(0, fileAbsolutePath.length() - 9));
-                if (decryptFile.isFile()) {
-                    while (decryptFile.isFile()) {
-                        decryptFile = new File(decryptFile.getAbsolutePath() + ".cryptoGX");
-                    }
-                }
-            } else {
-                decryptFile = new File(currentConfigSettings.get("fileOutputPath").trim() + "/" + fileName + ".cryptoGX");
-                while (decryptFile.isFile()) {
-                    decryptFile = new File(decryptFile.getAbsolutePath() + ".cryptoGX");
-                }
-            }
+        if (!currentConfigSettings.get("fileOutputPath").trim().isEmpty()) {
+            fileOutputPath = currentConfigSettings.get("fileOutputPath").trim() + "/";
         }
-        System.out.println(encryptFile.getAbsolutePath() + ";" + decryptFile.getAbsolutePath());
+        if (file.isFile()) {
+            fileEnding = ".cryptoGX";
+        } else {
+            fileEnding = "_cryptoGX";
+        }
+        encryptFile = new File(fileOutputPath + fileName + fileEnding);
+        while (encryptFile.exists()) {
+            encryptFile = new File(encryptFile.getAbsolutePath() + fileEnding);
+        }
+        if (fileAbsolutePath.endsWith(".cryptoGX") || fileAbsolutePath.endsWith("_cryptoGX")) {
+            decryptFile = new File(fileOutputPath + fileName.substring(0, fileName.length() - 9));
+        } else {
+            decryptFile = new File(fileOutputPath + fileName + fileEnding);
+        }
+        while (decryptFile.exists()) {
+            decryptFile = new File(decryptFile.getAbsolutePath() + fileEnding);
+        }
         inputOutputList.add(0, encryptFile);
         inputOutputList.add(1, decryptFile);
         fileEnDecryptInputFiles.getChildren().add(newLabel);
@@ -435,18 +436,24 @@ public class Controller implements Initializable {
      * @param url of the file
      * @param fileType of the file
      * @throws URISyntaxException
+     *
+     * @since 1.5.0
      */
     private void fileEnDecryptAddInternetFile(String url, int fileType) throws URISyntaxException {
         String filename;
-        if (fileType == FILEFILEURL) {
-            filename = url.substring(url.lastIndexOf("/") + 1);
-        } else if (fileType == DATAFILEURL) {
-            filename = url.substring(5, url.indexOf("/")) + "." + url.substring(url.indexOf("/") + 1, url.indexOf(";"));
-        } else if (fileType == NONSPECIFICFILEURL) {
-            filename = "unknown" + System.nanoTime();
-        } else {
-            warningAlert("Cannot read given url '" + url + "'");
-            return;
+        switch (fileType) {
+            case FILEFILEURL:
+                filename = url.substring(url.lastIndexOf("/") + 1);
+                break;
+            case DATAFILEURL:
+                filename = url.substring(5, url.indexOf("/")) + "." + url.substring(url.indexOf("/") + 1, url.indexOf(";"));
+                break;
+            case NONSPECIFICFILEURL:
+                filename = "unknown" + System.nanoTime();
+                break;
+            default:
+                warningAlert("Cannot read given url '" + url + "'");
+                return;
         }
         for (Label l: enDecryptInputOutputInternetFiles.keySet()) {
             if (l.getText().equals(filename)) {
@@ -510,6 +517,8 @@ public class Controller implements Initializable {
      *
      * @param image that should be added
      * @throws URISyntaxException
+     *
+     * @since 1.7.0
      */
     private void fileEnDecryptAddClipboardImage(BufferedImage image) throws URISyntaxException {
         String filename = "clipboardImage" + System.nanoTime() + ".png";
@@ -561,6 +570,8 @@ public class Controller implements Initializable {
      * @param label
      * @param encryptOutputFile is the filename of the file it gets encrypted
      * @param decryptOutputFile is the filename of the file it gets decrypted
+     *
+     * @since 1.2.0
      */
     private void fileOutputFilesChangeText(Label label, String encryptOutputFile, String decryptOutputFile) {
         File encryptFile;
@@ -595,17 +606,9 @@ public class Controller implements Initializable {
      * <p>Deletes an entry for en- / decryption.
      * Get called if the user presses 'del' or delete the entry in the en- / decryption box via the right click tooltip</p>
      *
-     * @see Controller#fileEnDecryptDeleteEntry(Label)
-     */
-    private void fileEnDecryptDeleteEntry() {
-        fileEnDecryptDeleteEntry(choosedLabel);
-    }
-
-    /**
-     * <p>Deletes an entry for en- / decryption.
-     * Get called if the user presses 'del' or delete the entry in the en- / decryption box via the right click tooltip</p>
-     *
      * @param label that should be deleted
+     *
+     * @since 1.2.0
      */
     private void fileEnDecryptDeleteEntry(Label label) {
         enDecryptInputOutputFiles.remove(label);
@@ -652,6 +655,8 @@ public class Controller implements Initializable {
      * Get called if the user click an non-highlighted item in the en- / decryption box</p>
      *
      * @param changeLabel is the label that the user has clicked
+     *
+     * @since 1.0.0
      */
     private void fileEnDecryptSelected(Label changeLabel) {
         if (changeLabel != null) {
@@ -676,16 +681,35 @@ public class Controller implements Initializable {
     /**
      * <p>Opens a file chooser GUI where the user can select the files that should be en- / decrypted.
      * Get called if the 'Choose files...' in the file en- / decrypt section button is pressed</p>
+     *
+     * @since 1.12.0
      */
-    public void fileEnDecryptChoose() {
+    public void fileEnDecryptChooseFiles() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Choose files");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("All files", "*.*"));
         List<File> files = fileChooser.showOpenMultipleDialog(rootWindow.getScene().getWindow());
         try {
-            if (files.size() >= 1) {
+            if (files.size() > 0) {
                 files.forEach(this::fileEnDecryptAddFile);
             }
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * <p>Opens a directory chooser GUI where the user can select the directories that should be en- / decrypted.
+     * Get called if the 'directories...' in the file en- / decrypt section button is pressed</p>
+     *
+     * @since 1.12.0
+     */
+    public void fileEnDecryptChooseDirectories() {
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        directoryChooser.setTitle("Choose directories");
+        File file = directoryChooser.showDialog(rootWindow.getScene().getWindow());
+        try {
+            fileEnDecryptAddFile(file);
         } catch (NullPointerException e) {
             e.printStackTrace();
         }
@@ -695,16 +719,14 @@ public class Controller implements Initializable {
      * <p>Get called if user drags a (normal or internet) file over the en- / decrypt file box</p>
      *
      * @param event source
+     *
+     * @since 1.2.0
      */
     public void onFileEnDecryptDragOver(DragEvent event) {
         Dragboard dragboard = event.getDragboard();
         if (event.getGestureSource() != fileEnDecryptInputFiles) {
             if (dragboard.hasFiles()) {
-                if (dragboard.getFiles().size() == 1 && dragboard.getFiles().get(0).isDirectory()) {
-                    return;
-                } else {
-                    event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
-                }
+                event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
             } else if (dragboard.hasUrl()) {
                 String url = dragboard.getUrl();
                 String urlFilename = dragboard.getUrl().split("/")[dragboard.getUrl().split("/").length - 1];
@@ -717,7 +739,7 @@ public class Controller implements Initializable {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                } else if (urlFilename.contains(".") && !Utils.hasAnyCharacter("\\/:*?|<>\"", urlFilename)) {
+                } else if (urlFilename.contains(".") && Utils.hasAnyCharacter("\\/:*?|<>\"", urlFilename)) {
                     try {
                         new URL(url);
                         event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
@@ -737,21 +759,19 @@ public class Controller implements Initializable {
      *
      * @param event source
      * @throws URISyntaxException
+     *
+     * @since 1.2.0
      */
     public void onFileEnDecryptDragNDrop(DragEvent event) throws URISyntaxException {
         Dragboard dragboard = event.getDragboard();
         if (dragboard.hasFiles()) {
-            dragboard.getFiles().forEach(file -> {
-                if (file.isFile()) {
-                    fileEnDecryptAddFile(file);
-                }
-            });
+            dragboard.getFiles().forEach(this::fileEnDecryptAddFile);
         } else if (dragboard.hasUrl()) {
             String url = dragboard.getUrl();
             String urlFilename = dragboard.getUrl().split("/")[dragboard.getUrl().split("/").length - 1];
             if (url.startsWith("data:")) {
                 fileEnDecryptAddInternetFile(url, DATAFILEURL);
-            } else if (urlFilename.contains(".") && !Utils.hasAnyCharacter("\\/:*?|<>\"", urlFilename)) {
+            } else if (urlFilename.contains(".") && Utils.hasAnyCharacter("\\/:*?|<>\"", urlFilename)) {
                 fileEnDecryptAddInternetFile(url, FILEFILEURL);
             } else {
                 fileEnDecryptAddInternetFile(url, NONSPECIFICFILEURL);
@@ -765,6 +785,8 @@ public class Controller implements Initializable {
      *
      * @param event source
      * @throws URISyntaxException
+     *
+     * @since 1.7.0
      */
     public void onFileEnDecryptPaste(KeyEvent event) throws URISyntaxException {
         if (paste.match(event)) {
@@ -790,6 +812,8 @@ public class Controller implements Initializable {
     /**
      * <p>Encrypt all files given files.
      * Get called if file 'Encrypt' button is pressed</p>
+     *
+     * @since 1.0.0
      */
     public void fileEncryptButton() {
         final byte[] salt;
@@ -816,27 +840,24 @@ public class Controller implements Initializable {
                     totalThreads.getAndIncrement();
                     Label inputFileLabel = entry.getKey();
                     ArrayList<File> outputFileList = entry.getValue();
-                    EnDecrypt.AES fileEncrypt = new EnDecrypt.AES(fileEnDecryptKeyEntry.getText(), salt);
+                    String fileEnDecryptAlgorithm = fileEnDecryptAlgorithmBox.getSelectionModel().getSelectedItem();
+                    EnDecrypt.AES fileEncrypt = new EnDecrypt.AES(fileEnDecryptKeyEntry.getText(), salt, Integer.parseInt(fileEnDecryptAlgorithm.substring(fileEnDecryptAlgorithm.indexOf('-') + 1)));
                     if (enDecryptInputOutputInternetFiles.containsKey(inputFileLabel)) {
                         ArrayList<Object> fileSpecs = enDecryptInputOutputInternetFiles.get(inputFileLabel);
                         int urlType = (int) fileSpecs.get(0);
                         String url = (String) fileSpecs.get(1);
                         try {
-                            if (urlType == FILEFILEURL) {
+                            if (urlType == FILEFILEURL || urlType == NONSPECIFICFILEURL) {
                                 URLConnection openURL = new URL(url).openConnection();
                                 openURL.addRequestProperty("User-Agent", "Mozilla/5.0");
-                                fileEncrypt.encryptFileLineByLine(openURL.getInputStream(), new FileOutputStream((File) fileSpecs.get(2)));
+                                fileEncrypt.encryptFile(openURL.getInputStream(), new FileOutputStream((File) fileSpecs.get(2)), buffer);
                             } else if (urlType == DATAFILEURL) {
                                 final int dataStartIndex = url.indexOf(",") + 1;
                                 final String data = url.substring(dataStartIndex);
                                 byte[] decoded = java.util.Base64.getDecoder().decode(data);
-                                fileEncrypt.encryptFileAllInOne(decoded, new FileOutputStream((File) fileSpecs.get(2)));
-                            } else if (urlType == NONSPECIFICFILEURL) {
-                                URLConnection openURL = new URL(url).openConnection();
-                                openURL.addRequestProperty("User-Agent", "Mozilla/5.0");
-                                fileEncrypt.encryptFileLineByLine(openURL.getInputStream(), new FileOutputStream((File) fileSpecs.get(2)));
+                                fileEncrypt.encryptFile(new ByteArrayInputStream(decoded), new FileOutputStream((File) fileSpecs.get(2)), buffer);
                             }
-                        } catch (FileNotFoundException | InvalidKeySpecException | NoSuchAlgorithmException | MalformedURLException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException e) {
+                        } catch (FileNotFoundException | InvalidKeySpecException | NoSuchAlgorithmException | MalformedURLException | InvalidKeyException | NoSuchPaddingException e) {
                             e.printStackTrace();
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -847,17 +868,25 @@ public class Controller implements Initializable {
                         BufferedImage bufferedImage = enDecryptInputOutputClipboardImages.get(inputFileLabel);
                         try {
                             ImageIO.write(bufferedImage, "png", byteArrayOutputStream);
-                            fileEncrypt.encryptFileAllInOne(byteArrayOutputStream.toByteArray(), new FileOutputStream(outputFileList.get(0).getAbsoluteFile()));
+                            fileEncrypt.encryptFile(new ByteArrayInputStream(byteArrayOutputStream.toByteArray()), new FileOutputStream(outputFileList.get(0).getAbsoluteFile()), buffer);
                         } catch (IOException e) {
                             e.printStackTrace();
                             Platform.runLater(() -> errorAlert("IO Exception occurred", e.getMessage()));
-                        } catch (NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException | BadPaddingException | InvalidKeySpecException | IllegalBlockSizeException e) {
+                        } catch (NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException | InvalidKeySpecException e) {
                             e.printStackTrace();
                         }
                     } else {
                         try {
-                            fileEncrypt.encryptFileLineByLine(inputFileLabel.getText(), outputFileList.get(0).getAbsolutePath());
-                        } catch (NoSuchPaddingException | InvalidAlgorithmParameterException | NoSuchAlgorithmException | InvalidKeyException | InvalidKeySpecException e) {
+                            File inputFile = new File(inputFileLabel.getText());
+                            if (inputFile.isFile()) {
+                                fileEncrypt.encryptFile(new FileInputStream(inputFile), new FileOutputStream(outputFileList.get(0)), buffer);
+                            } else {
+                                fileEncrypt.encryptDirectory(inputFileLabel.getText(), outputFileList.get(0).getAbsolutePath(), ".cryptoGX", buffer);
+                                if (!outputFileList.get(0).isDirectory()) {
+                                    Platform.runLater(() -> warningAlert("Couldn't create directory\n '" + outputFileList.get(0).getAbsolutePath() + "'.\nTry again or restart cryptoGX with admin privileges"));
+                                }
+                            }
+                        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | InvalidKeySpecException e) {
                             e.printStackTrace();
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -891,6 +920,8 @@ public class Controller implements Initializable {
     /**
      * <p>Decrypt all files given files.
      * Get called if file 'Decrypt' button is pressed</p>
+     *
+     * @since 1.0.0
      */
     public void fileDecryptButton() {
         final byte[] salt;
@@ -917,7 +948,8 @@ public class Controller implements Initializable {
                     totalThreads.getAndIncrement();
                     Label inputFileLabel = entry.getKey();
                     ArrayList<File> outputFileList = entry.getValue();
-                    EnDecrypt.AES fileDecrypt = new EnDecrypt.AES(fileEnDecryptKeyEntry.getText(), salt);
+                    String fileEnDecryptAlgorithm = fileEnDecryptAlgorithmBox.getSelectionModel().getSelectedItem();
+                    EnDecrypt.AES fileDecrypt = new EnDecrypt.AES(fileEnDecryptKeyEntry.getText(), salt, Integer.parseInt(fileEnDecryptAlgorithm.substring(fileEnDecryptAlgorithm.indexOf('-') + 1)));
                     if (enDecryptInputOutputInternetFiles.containsKey(entry.getKey())) {
                         ArrayList<Object> imageSpecs = enDecryptInputOutputInternetFiles.get(entry.getKey());
                         int urlType = (int) imageSpecs.get(0);
@@ -926,18 +958,19 @@ public class Controller implements Initializable {
                             if (urlType == FILEFILEURL) {
                                 URLConnection openURL = new URL(url).openConnection();
                                 openURL.addRequestProperty("User-Agent", "Mozilla/5.0");
-                                fileDecrypt.decryptFileLineByLine(openURL.getInputStream(), new FileOutputStream((File) imageSpecs.get(2)));
+                                fileDecrypt.decryptFile(openURL.getInputStream(), new FileOutputStream((File) imageSpecs.get(2)), buffer);
+                                fileDecrypt.decryptFile(openURL.getInputStream(), new FileOutputStream((File) imageSpecs.get(2)), buffer);
                             } else if (urlType == DATAFILEURL) {
                                 final int dataStartIndex = url.indexOf(",") + 1;
                                 final String data = url.substring(dataStartIndex);
                                 byte[] decoded = java.util.Base64.getDecoder().decode(data);
-                                fileDecrypt.decryptFileAllInOne(decoded, new FileOutputStream((File) imageSpecs.get(2)));
+                                fileDecrypt.decryptFile(new ByteArrayInputStream(decoded), new FileOutputStream((File) imageSpecs.get(2)), buffer);
                             } else if (urlType == NONSPECIFICFILEURL) {
                                 URLConnection openURL = new URL(url).openConnection();
                                 openURL.addRequestProperty("User-Agent", "Mozilla/5.0");
-                                fileDecrypt.decryptFileLineByLine(openURL.getInputStream(), new FileOutputStream((File) imageSpecs.get(2)));
+                                fileDecrypt.decryptFile(openURL.getInputStream(), new FileOutputStream((File) imageSpecs.get(2)), buffer);
                             }
-                        } catch (FileNotFoundException | InvalidKeySpecException | NoSuchAlgorithmException | MalformedURLException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException e) {
+                        } catch (FileNotFoundException | InvalidKeySpecException | NoSuchAlgorithmException | MalformedURLException | InvalidKeyException | NoSuchPaddingException e) {
                             e.printStackTrace();
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -948,17 +981,25 @@ public class Controller implements Initializable {
                         BufferedImage bufferedImage = enDecryptInputOutputClipboardImages.get(inputFileLabel);
                         try {
                             ImageIO.write(bufferedImage, "png", byteArrayOutputStream);
-                            fileDecrypt.decryptFileAllInOne(byteArrayOutputStream.toByteArray(), new FileOutputStream(outputFileList.get(1).getAbsolutePath()));
+                            fileDecrypt.decryptFile(new ByteArrayInputStream(byteArrayOutputStream.toByteArray()), new FileOutputStream(outputFileList.get(1).getAbsolutePath()), buffer);
                         } catch (IOException e) {
                             e.printStackTrace();
                             Platform.runLater(() -> errorAlert("IO Exception occurred", e.getMessage()));
-                        } catch (NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException | BadPaddingException | InvalidKeySpecException | IllegalBlockSizeException e) {
+                        } catch (NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException | InvalidKeySpecException e) {
                             e.printStackTrace();
                         }
                     } else {
                         try {
-                            fileDecrypt.decryptFileLineByLine(inputFileLabel.getText(), outputFileList.get(1).getAbsolutePath());
-                        } catch (NoSuchPaddingException | InvalidKeySpecException | InvalidKeyException | NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
+                            File inputFile = new File(inputFileLabel.getText());
+                            if (inputFile.isFile()) {
+                                fileDecrypt.decryptFile(new FileInputStream(inputFile), new FileOutputStream(outputFileList.get(1)), buffer);
+                            } else {
+                                fileDecrypt.decryptDirectory(inputFileLabel.getText(), outputFileList.get(1).getAbsolutePath(), "@.cryptoGX@", buffer);
+                                if (!outputFileList.get(1).isDirectory()) {
+                                    Platform.runLater(() -> warningAlert("Couldn't create directory\n '" + outputFileList.get(1).getAbsolutePath() + "'.\nTry again or restart cryptoGX with admin privileges"));
+                                }
+                            }
+                        } catch (NoSuchPaddingException | InvalidKeySpecException | InvalidKeyException | NoSuchAlgorithmException e) {
                             e.printStackTrace();
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -995,6 +1036,8 @@ public class Controller implements Initializable {
     /**
      * <p>Cancels the file en- / decryption.
      * Get called if the file en- / decrypt 'Cancel' button is pressed</p>
+     *
+     * @since 1.12.0
      */
     public void fileEnDecryptCancelButton() {
         for (Iterator<Thread> iterator = getFileEnDecryptThreads().iterator(); iterator.hasNext();) {
@@ -1017,6 +1060,8 @@ public class Controller implements Initializable {
      * <p>Synchronized method to get the list of threads which delete files</p>
      *
      * @return list of threads which delete files
+     *
+     * @since 1.2.0
      */
     private synchronized List<Thread> getFileDeleteThreads() {
         return fileDeleteThreads;
@@ -1026,6 +1071,8 @@ public class Controller implements Initializable {
      * <p>Synchronized method to get the number of threads which delete files</p>
      *
      * @return number of threads which delete files
+     *
+     * @since 1.2.0
      */
     private synchronized int getFileDeleteThreadsSize() {
         return fileDeleteThreads.size();
@@ -1035,6 +1082,8 @@ public class Controller implements Initializable {
      * <p>Synchronized method to add a thread to the file delete list of current running file delete threads</p>
      *
      * @param thread that should be added
+     *
+     * @since 1.2.0
      */
     private synchronized void addFileDeleteThread(Thread thread) {
         fileDeleteThreads.add(thread);
@@ -1044,6 +1093,8 @@ public class Controller implements Initializable {
      * <p>Synchronized method to remove a thread from the file delete list of current file delete threads</p>
      *
      * @param thread that should be removed
+     *
+     * @since 1.2.0
      */
     private synchronized void removeFileDeleteThread(Thread thread) {
         fileDeleteThreads.remove(thread);
@@ -1053,6 +1104,8 @@ public class Controller implements Initializable {
      * <p>Adds a file that should be deleted</p>
      *
      * @param file that should be added
+     *
+     * @since 1.2.0
      */
     private void fileDeleteAddFile(File file) {
         for (File f: deleteInputFiles.values()) {
@@ -1064,12 +1117,8 @@ public class Controller implements Initializable {
         newLabel.setOnKeyTyped(this::keyTypedTooltip);
         newLabel.setOnMouseMoved(this::mouseOverEntryTooltip);
         newLabel.setOnMouseExited(event -> mouseExitEntryTooltip());
-        newLabel.setOnMouseClicked(event -> {
-            fileDeleteSelected(newLabel);
-            if (event.getButton() == MouseButton.SECONDARY) {
-                fileDeleteInputContextMenu.show(newLabel, event.getScreenX(), event.getScreenY());
-            }
-        });
+        newLabel.setOnMouseClicked(event -> fileDeleteSelected(newLabel));
+        newLabel.setContextMenu(fileDeleteInputContextMenu);
         fileDeleteInputFiles.getChildren().add(newLabel);
         deleteInputFiles.put(newLabel, file.getAbsoluteFile());
     }
@@ -1079,6 +1128,8 @@ public class Controller implements Initializable {
      * Get called if the user click an non-highlighted item in the file delete box</p>
      *
      * @param changeLabel is the label that the user has clicked
+     *
+     * @since 1.2.0
      */
     private void fileDeleteSelected(Label changeLabel) {
         if (changeLabel != null) {
@@ -1096,17 +1147,9 @@ public class Controller implements Initializable {
      * <p>Deletes an entry for file delete.
      * Get called if the user presses 'del' or delete the entry in the file delete box via the right click tooltip</p>
      *
-     * @see Controller#fileEnDecryptDeleteEntry(Label)
-     */
-    private void fileDeleteDeleteEntry() {
-        fileEnDecryptDeleteEntry(choosedLabel);
-    }
-
-    /**
-     * <p>Deletes an entry for file delete.
-     * Get called if the user presses 'del' or delete the entry in the file delete box via the right click tooltip</p>
-     *
      * @param label that should be deleted
+     *
+     * @since 1.12.0
      */
     private void fileDeleteDeleteEntry(Label label) {
         deleteInputFiles.remove(choosedLabel);
@@ -1137,16 +1180,35 @@ public class Controller implements Initializable {
     /**
      * <p>Opens a file chooser GUI where the user can select the files that should be en- / decrypted.
      * Get called if the 'Choose files...' in the delete section button is pressed</p>
+     *
+     * @since 1.12.0
      */
-    public void fileDeleteChoose() {
+    public void fileDeleteChooseFiles() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Choose files");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("All Files", "*.*"));
         List<File> files = fileChooser.showOpenMultipleDialog(rootWindow.getScene().getWindow());
         try {
-            if (files.size() >= 1) {
-                files.forEach(file -> fileDeleteAddFile(file));
+            if (files.size() > 0) {
+                files.forEach(this::fileDeleteAddFile);
             }
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * <p>Opens a directory chooser GUI where the user can select the directories that should be en- / decrypted.
+     * Get called if the 'Choose directories...' in the delete section button is pressed</p>
+     *
+     * @since 1.12.0
+     */
+    public void fileDeleteChooseDirectories() {
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        directoryChooser.setTitle("Choose directories");
+        File file = directoryChooser.showDialog(rootWindow.getScene().getWindow());
+        try {
+            fileDeleteAddFile(file);
         } catch (NullPointerException e) {
             e.printStackTrace();
         }
@@ -1156,15 +1218,13 @@ public class Controller implements Initializable {
      * <p>Get called if user drags a file over the delete file box</p>
      *
      * @param event source
+     *
+     * @since 1.2.0
      */
     public void onFileDeleteDragOver(DragEvent event) {
         Dragboard dragboard = event.getDragboard();
         if (event.getGestureSource() != fileDeleteInputFiles && dragboard.hasFiles()) {
-            if (dragboard.getFiles().size() == 1 && dragboard.getFiles().get(0).isDirectory()) {
-                return;
-            } else {
-                event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
-            }
+            event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
         }
     }
 
@@ -1172,12 +1232,14 @@ public class Controller implements Initializable {
      * <p>Get called if the user drops the dragged file over the delete file box</p>
      *
      * @param event source
+     *
+     * @since 1.2.0
      */
     public void onFileDeleteDragNDrop(DragEvent event) {
         Dragboard dragboard = event.getDragboard();
         if (dragboard.hasFiles()) {
             dragboard.getFiles().forEach(file -> {
-                if (file.isFile()) {
+                if (file.isFile() || file.isDirectory()) {
                     fileDeleteAddFile(file);
                 }
             });
@@ -1187,14 +1249,15 @@ public class Controller implements Initializable {
     /**
      * <p>Delete all given files.
      * Get called if 'Delete' button is pressed</p>
+     *
+     * @since 1.2.0
      */
     public void fileDelete() {
         if (!fileDeleteLoading && !deleteInputFiles.isEmpty()) {
             fileDeleteLoadingImage.setImage(loadingImage);
         }
-        Iterator<Map.Entry<Label, File>> deleteIterator = deleteInputFiles.entrySet().iterator();
-        while(deleteIterator.hasNext()) {
-            Map.Entry<Label, File> map = deleteIterator.next();
+        int deleteIterations = Integer.parseInt(fileDeleteIterationsEntry.getText());
+        for (Map.Entry<Label, File> map : deleteInputFiles.entrySet()) {
             Label label = map.getKey();
             File file = map.getValue();
             Thread thread = new Thread(() -> {
@@ -1209,10 +1272,13 @@ public class Controller implements Initializable {
                     }
                 }
                 totalThreads.getAndIncrement();
-                String deleteFile = file.getAbsolutePath();
                 try {
-                    SecureDelete.deleteFileLineByLine(deleteFile, Integer.parseInt(fileDeleteIterationsEntry.getText()));
-                } catch (NoSuchAlgorithmException | IOException e) {
+                    if (file.isFile()) {
+                        SecureDelete.deleteFile(file, deleteIterations, buffer);
+                    } else if (file.isDirectory()) {
+                        SecureDelete.deleteDirectory(file.getAbsolutePath(), deleteIterations, buffer);
+                    }
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
                 if ((getFileDeleteThreadsSize() - 1) <= 0) {
@@ -1236,6 +1302,8 @@ public class Controller implements Initializable {
     /**
      * <p>Cancels the file en- / decryption.
      * Get called if the file delete 'Cancel' button is pressed</p>
+     *
+     * @since 1.12.0
      */
     public void fileDeleteCancelButton() {
         for (Iterator<Thread> iterator = getFileDeleteThreads().iterator(); iterator.hasNext();) {
@@ -1261,13 +1329,13 @@ public class Controller implements Initializable {
      * @param resources
      * The resources used to localize the root object, or <tt>null</tt> if
      * the root object was not localized.
+     *
+     * @since 1.0.0
      */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
 
         //-----general-----//
-
-        currentConfigSettings.put("encryptHash", configDefaultEncryptHash);
 
         currentConfigSettings.put("textKey", configDefaultTextKey);
         currentConfigSettings.put("textSalt", configDefaultTextSalt);
@@ -1283,9 +1351,6 @@ public class Controller implements Initializable {
         currentConfigSettings.put("removeFromFileBox", String.valueOf(configDefaultRemoveFileFromFileBox));
         currentConfigSettings.put("limitNumberOfThreads", String.valueOf(configDefaultLimitNumberOfThreads));
 
-        textAlgorithms.add("AES");
-        fileEnDecryptAlgorithms.add("AES");
-
         menubar.setOnMouseDragged(event -> {
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             stage.setX(event.getScreenX() + menubarX);
@@ -1300,9 +1365,9 @@ public class Controller implements Initializable {
         rootWindow.setOnKeyReleased(event -> {
             if (event.getCode() == KeyCode.DELETE && choosedLabelType != null) {
                 if (choosedLabelType.equals("ENDECRYPT")) {
-                    fileEnDecryptDeleteEntry();
+                    fileEnDecryptDeleteEntry(choosedLabel);
                 } else if (choosedLabelType.equals("DELETE")) {
-                    fileDeleteDeleteEntry();
+                    fileDeleteDeleteEntry(choosedLabel);
                 }
             }
         });
@@ -1363,7 +1428,6 @@ public class Controller implements Initializable {
         loadSettings.setOnAction(event -> {
             try {
                 currentConfigSettings = (HashMap<String, String>) loadSettingsGUI(rootWindow.getScene().getWindow()).values().toArray()[0];
-                System.out.println(currentConfigSettings);
                 textKeyEntry.setText(currentConfigSettings.get("textKey"));
                 textSaltEntry.setText(currentConfigSettings.get("textSalt"));
                 textAlgorithmBox.setValue(currentConfigSettings.get("textAlgorithm"));
@@ -1380,9 +1444,9 @@ public class Controller implements Initializable {
                 e.printStackTrace();
             } catch (ArrayIndexOutOfBoundsException ex) {
                 try {
-                    SecureDelete.deleteFileLineByLine(config, 5);
+                    SecureDelete.deleteFile(config, 5, buffer);
                     isConfig = false;
-                } catch (NoSuchAlgorithmException | IOException e) {
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
@@ -1402,9 +1466,9 @@ public class Controller implements Initializable {
             File file = fileChooser.showOpenDialog(rootWindow.getScene().getWindow());
             if (file != null) {
                 if (isConfig) {
-                    readUserSettings(file).forEach((Config::addSetting));
+                    writeSettings(config, readSettings(file));
                 } else {
-                    writeConfig(readUserSettings(file));
+                    writeSettings(config, readSettings(file));
                     isConfig = true;
                 }
             }
@@ -1412,24 +1476,31 @@ public class Controller implements Initializable {
 
         //-----text------//
 
-        textAlgorithmBox.setItems(FXCollections.observableArrayList(textAlgorithms));
-        textAlgorithmBox.setValue(textAlgorithms.get(0));
+        textAlgorithmBox.setItems(FXCollections.observableArrayList(Utils.algorithms.keySet()));
+        textAlgorithmBox.setValue(Utils.algorithms.keySet().toArray(new String[Utils.algorithms.size()])[0]);
 
         //-----fileEnDecrypt-----//
 
-        fileEnDecryptAlgorithmBox.setItems(FXCollections.observableArrayList(fileEnDecryptAlgorithms));
-        fileEnDecryptAlgorithmBox.setValue(fileEnDecryptAlgorithms.get(0));
+        fileEnDecryptAlgorithmBox.setItems(FXCollections.observableArrayList(Utils.algorithms.keySet()));
+        fileEnDecryptAlgorithmBox.setValue(Utils.algorithms.keySet().toArray(new String[Utils.algorithms.size()])[0]);
 
         MenuItem enDecryptRemove = new MenuItem();
         enDecryptRemove.setText("Remove");
-        enDecryptRemove.setOnAction(removeEvent -> fileEnDecryptDeleteEntry());
+        enDecryptRemove.setOnAction(removeEvent -> fileEnDecryptDeleteEntry(choosedLabel));
         MenuItem enDecryptChangeDest = new MenuItem();
-        enDecryptChangeDest.setText("Change output file");
+        enDecryptChangeDest.setText("Change output file / directory");
         enDecryptChangeDest.setOnAction(outputFileChangeEvent -> {
-            FileChooser fileDestChooser = new FileChooser();
-            fileDestChooser.setTitle("Choose or create new file");
-            fileDestChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("All files", "*.*"));
-            File file = fileDestChooser.showSaveDialog(rootWindow.getScene().getWindow());
+            File file;
+            if (new File(choosedLabel.getText()).isFile()) {
+                FileChooser destChooser = new FileChooser();
+                destChooser.setTitle("Choose or create new file");
+                destChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("All files", "*.*"));
+                file = destChooser.showSaveDialog(rootWindow.getScene().getWindow());
+            } else {
+                DirectoryChooser destChooser = new DirectoryChooser();
+                destChooser.setTitle("Choose or create new directory");
+                file = destChooser.showDialog(rootWindow.getScene().getWindow());
+            }
             if (file != null) {
                 for (Map.Entry<Label, ArrayList<File>> entry : enDecryptInputOutputFiles.entrySet()) {
                     if (entry.getKey().getText().equals(choosedLabel.getText())) {
@@ -1496,19 +1567,15 @@ public class Controller implements Initializable {
         fileOutputFileChangeDest.setDisable(true);
         getChoosedLabelOutputFileFolder.setDisable(true);
 
-        fileEncryptOutputFile.textProperty().addListener((observable, oldValue, newValue) -> {
-            fileOutputFilesChangeText(choosedLabel, newValue, fileDecryptOutputFile.getText());
-        });
-        fileDecryptOutputFile.textProperty().addListener((observable, oldValue, newValue) -> {
-            fileOutputFilesChangeText(choosedLabel, fileEncryptOutputFile.getText(), newValue);
-        });
+        fileEncryptOutputFile.textProperty().addListener((observable, oldValue, newValue) -> fileOutputFilesChangeText(choosedLabel, newValue, fileDecryptOutputFile.getText()));
+        fileDecryptOutputFile.textProperty().addListener((observable, oldValue, newValue) -> fileOutputFilesChangeText(choosedLabel, fileEncryptOutputFile.getText(), newValue));
 
         //-----fileDelete-----//
 
         MenuItem deleteRemove = new MenuItem();
         deleteRemove.setText("Remove");
-        deleteRemove.setOnAction(removeEvent -> fileDeleteDeleteEntry());
-        fileDeleteInputContextMenu.getItems().addAll(deleteRemove);
+        deleteRemove.setOnAction(removeEvent -> fileDeleteDeleteEntry(choosedLabel));
+        fileDeleteInputContextMenu.getItems().add(deleteRemove);
 
         ContextMenu fileDeleteInputFilesMenu = new ContextMenu();
         MenuItem deletePaste = new MenuItem();
@@ -1547,33 +1614,32 @@ public class Controller implements Initializable {
                 e.printStackTrace();
             }
             if (isConfig) {
-                    Platform.runLater(() -> {
+                Platform.runLater(() -> {
+                    try {
+                        currentConfigSettings = (HashMap<String, String>) loadSettingsGUI(rootWindow.getScene().getWindow()).values().toArray()[0];
+                        textKeyEntry.setText(currentConfigSettings.get("textKey"));
+                        textSaltEntry.setText(currentConfigSettings.get("textSalt"));
+                        textAlgorithmBox.setValue(currentConfigSettings.get("textAlgorithm"));
+
+                        fileEnDecryptKeyEntry.setText(currentConfigSettings.get("fileEnDecryptKey"));
+                        fileEnDecryptSaltEntry.setText(currentConfigSettings.get("fileEnDecryptSalt"));
+                        fileEnDecryptAlgorithmBox.setValue(currentConfigSettings.get("fileEnDecryptAlgorithm"));
+
+                        fileDeleteIterationsEntry.setText(currentConfigSettings.get("fileDeleteIterations"));
+
+                        removeFileFromFileBox.setSelected(Boolean.parseBoolean(currentConfigSettings.get("removeFromFileBox")));
+                        limitNumberOfThreads.setSelected(Boolean.parseBoolean(currentConfigSettings.get("limitNumberOfThreads")));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (ArrayIndexOutOfBoundsException ex) {
                         try {
-                            currentConfigSettings = (HashMap<String, String>) loadSettingsGUI(rootWindow.getScene().getWindow()).values().toArray()[0];
-                            System.out.println(currentConfigSettings);
-                            textKeyEntry.setText(currentConfigSettings.get("textKey"));
-                            textSaltEntry.setText(currentConfigSettings.get("textSalt"));
-                            textAlgorithmBox.setValue(currentConfigSettings.get("textAlgorithm"));
-
-                            fileEnDecryptKeyEntry.setText(currentConfigSettings.get("fileEnDecryptKey"));
-                            fileEnDecryptSaltEntry.setText(currentConfigSettings.get("fileEnDecryptSalt"));
-                            fileEnDecryptAlgorithmBox.setValue(currentConfigSettings.get("fileEnDecryptAlgorithm"));
-
-                            fileDeleteIterationsEntry.setText(currentConfigSettings.get("fileDeleteIterations"));
-
-                            removeFileFromFileBox.setSelected(Boolean.parseBoolean(currentConfigSettings.get("removeFromFileBox")));
-                            limitNumberOfThreads.setSelected(Boolean.parseBoolean(currentConfigSettings.get("limitNumberOfThreads")));
+                            SecureDelete.deleteFile(config, 5, buffer);
+                            isConfig = false;
                         } catch (IOException e) {
                             e.printStackTrace();
-                        } catch (ArrayIndexOutOfBoundsException ex) {
-                            try {
-                                SecureDelete.deleteFileLineByLine(config, 5);
-                                isConfig = false;
-                            } catch (NoSuchAlgorithmException | IOException e) {
-                                e.printStackTrace();
-                            }
                         }
-                    });
+                    }
+                });
             }
         });
         t.start();

@@ -20,10 +20,10 @@ java version and include [javaFX](#https://openjfx.io/) manually
 
 | Latest release (1.12.0) |
 |:------------------------|
-| [Source code](https://github.com/blueShard-dev/cryptoGX/archive/master.zip) |
-| [Executable jar file](https://dl.dropbox.com/s/1px5dotzyop3rpn/cryptoGX.jar?dl=0) |
-| [Windows portable](https://dl.dropbox.com/s/10jf6cfpnejrvbf/cryptoGX_1.11.0_portable.exe?dl=0) |
-| [Windows installer](https://dl.dropbox.com/s/lq9kuv4erv39y3n/cryptoGX_1.11.0_win_setup.exe?dl=0) |
+| [Source code](https://github.com/blueShard-dev/cryptoGX/archive/v1.12.0.zip) |
+| [Executable jar file](https://github.com/blueShard-dev/cryptoGX/releases/download/v1.12.0/cryptoGX.jar) |
+| [Windows installer](https://github.com/blueShard-dev/cryptoGX/releases/download/v1.12.0/cryptoGX-1.12.0_win_installer.exe) |
+| [Debian installer](https://github.com/blueShard-dev/cryptoGX/releases/download/v1.12.0/cryptogx-1.12.0_debian_installer.deb) |
 
 **NOTE**: If you download one of the windows executables (`.exe`) your antivirus may scan the file(s)
 
@@ -51,4 +51,4 @@ or type `<cryptoGX jar file> help` to get help
 
 # License
 
-This project is licensed under the Mozilla Public License 2.0 - see the [LICENSE](License) file for more details
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](License) file for more details

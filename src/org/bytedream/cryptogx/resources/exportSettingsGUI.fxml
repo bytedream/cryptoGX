@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane fx:id="mainWindow" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="253.0" prefWidth="254.0" style="-fx-border-color: black;" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <MenuBar fx:id="menuBar" prefHeight="25.0" prefWidth="254.0" style="-fx-border-color: black;" />
+      <ImageView fx:id="closeButton" fitHeight="25.0" fitWidth="25.0" layoutX="228.0" layoutY="1.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@close.png" />
+         </image>
+      </ImageView>
+      <Text fx:id="exportSettingsText" layoutX="68.0" layoutY="49.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Export settings" textAlignment="CENTER" wrappingWidth="117.5283203125" />
+      <ScrollPane layoutX="7.0" layoutY="64.0" prefHeight="120.0" prefWidth="240.0">
+         <content>
+            <VBox fx:id="settingsBox" prefHeight="118.0" prefWidth="238.0" />
+         </content>
+      </ScrollPane>
+      <Button fx:id="exportButton" layoutX="86.0" layoutY="203.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="82.0" text="Export..." textAlignment="CENTER" />
+   </children>
+</AnchorPane>

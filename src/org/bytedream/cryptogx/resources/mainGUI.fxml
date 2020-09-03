@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane fx:id="rootWindow" prefHeight="470.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.bytedream.cryptogx.Controller">
+   <children>
+      <MenuBar fx:id="menubar" prefHeight="25.0" prefWidth="900.0">
+         <menus>
+            <Menu fx:id="fileMenu" mnemonicParsing="false" text="File">
+              <items>
+                  <MenuItem fx:id="fileMenuClose" mnemonicParsing="false" onAction="#closeApplication" text="Exit" />
+              </items>
+            </Menu>
+            <Menu fx:id="settingsMenu" mnemonicParsing="false" text="Settings">
+               <items>
+                  <MenuItem fx:id="setDefaultOutputPath" mnemonicParsing="false" text="Set default file en- / decryption output path..." />
+                  <RadioMenuItem fx:id="removeFileFromFileBox" mnemonicParsing="false" text="Remove files from file box after en- / decryption" />
+                  <RadioMenuItem fx:id="limitNumberOfThreads" mnemonicParsing="false" selected="true" text="Limit number of threads" />
+                  <SeparatorMenuItem fx:id="settingsSeparator1" mnemonicParsing="false" />
+                  <MenuItem fx:id="saveSettings" mnemonicParsing="false" text="Save settings..." />
+                  <MenuItem fx:id="loadSettings" disable="true" mnemonicParsing="false" text="Load settings..." />
+                  <MenuItem fx:id="exportSettings" disable="true" mnemonicParsing="false" text="Export settings..." />
+                  <MenuItem fx:id="importSettings" mnemonicParsing="false" text="Import settings..." />
+               </items></Menu>
+            <Menu fx:id="helpMenu" mnemonicParsing="false" text="Help"/>
+         </menus>
+      </MenuBar>
+      <ImageView fx:id="minimizeWindow" fitHeight="25.0" fitWidth="25.0" layoutX="850.0" onMouseClicked="#minimizeApplication" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@minimize.png" />
+         </image></ImageView>
+      <ImageView fx:id="closeWindow" fitHeight="25.0" fitWidth="25.0" layoutX="875.0" onMouseClicked="#closeApplication" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@close.png" />
+         </image></ImageView>
+      <Text fx:id="textText" layoutX="81.0" layoutY="49.0" strokeType="OUTSIDE" strokeWidth="0.0" text="En- / decrypt Text" textAlignment="CENTER" wrappingWidth="135.9" />
+      <TextField fx:id="textKeyEntry" layoutX="74.0" layoutY="64.0" onKeyTyped="#keyTypedTooltip" onMouseExited="#mouseExitEntryTooltip" onMouseMoved="#mouseOverEntryTooltip" prefHeight="25.0" prefWidth="155.0" promptText="Key" />
+      <TextArea fx:id="textDecryptedEntry" layoutX="7.0" layoutY="107.0" onKeyTyped="#keyTypedTooltip" prefHeight="105.0" prefWidth="286.0" promptText="Decrypted Text" />
+      <TextArea fx:id="textEncryptedEntry" layoutX="7.0" layoutY="222.0" onKeyTyped="#keyTypedTooltip" prefHeight="105.0" prefWidth="286.0" promptText="Encrypted Text" />
+      <Button fx:id="textEncryptButton" layoutX="29.0" layoutY="339.0" mnemonicParsing="false" onAction="#textEncryptButton" prefHeight="26.0" prefWidth="76.0" text="Encrypt" />
+      <ImageView fx:id="textLoadingImage" fitHeight="40.0" fitWidth="40.0" layoutX="131.0" layoutY="332.0" pickOnBounds="true" preserveRatio="true" />
+      <Button fx:id="textDecryptButton" layoutX="199.0" layoutY="340.0" mnemonicParsing="false" onAction="#textDecryptButton" prefHeight="26.0" prefWidth="76.0" text="Decrypt" />
+      <Separator fx:id="textSeparator1" layoutX="7.0" layoutY="379.0" prefHeight="8.0" prefWidth="103.0" />
+      <Text fx:id="textAdvanced" layoutX="106.0" layoutY="386.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Advanced" textAlignment="CENTER" wrappingWidth="85.9" />
+      <Separator fx:id="textSeparator2" layoutX="190.0" layoutY="379.0" prefHeight="8.0" prefWidth="103.0" />
+      <Text fx:id="textAlgorithm" layoutX="185.0" layoutY="409.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Algorithm" textAlignment="CENTER" wrappingWidth="77.6" />
+      <TextField fx:id="textSaltEntry" layoutX="14.0" layoutY="419.0" onKeyTyped="#keyTypedTooltip" onMouseExited="#mouseExitEntryTooltip" onMouseMoved="#mouseOverEntryTooltip" prefHeight="25.0" prefWidth="136.0" promptText="Salt" />
+      <ComboBox fx:id="textAlgorithmBox" layoutX="156.0" layoutY="419.0" prefHeight="25.0" prefWidth="136.0" />
+      <Separator fx:id="midSeparator1" layoutX="300.0" layoutY="35.0" orientation="VERTICAL" prefHeight="424.0" prefWidth="0.0" />
+      <Text fx:id="fileEnDecryptText" layoutX="384.0" layoutY="49.0" strokeType="OUTSIDE" strokeWidth="0.0" text="En- / decrypt Files" textAlignment="CENTER" wrappingWidth="135.9" />
+      <TextField fx:id="fileEnDecryptKeyEntry" layoutX="374.0" layoutY="64.0" onKeyTyped="#keyTypedTooltip" onMouseExited="#mouseExitEntryTooltip" onMouseMoved="#mouseOverEntryTooltip" prefHeight="25.0" prefWidth="155.0" promptText="Key" />
+      <Button fx:id="fileEnDecryptFilesButton" layoutX="316.0" layoutY="97.0" mnemonicParsing="false" onAction="#fileEnDecryptChooseFiles" prefHeight="26.0" prefWidth="120.0" text="Choose files..." />
+      <Text layoutX="445.0" layoutY="114.0" scaleX="1.7" scaleY="1.7" scaleZ="1.7" strokeType="OUTSIDE" strokeWidth="0.0" text="/" textAlignment="CENTER" wrappingWidth="12.111118853092194" />
+      <Button fx:id="fileEnDecryptDirectoriesButton" layoutX="467.0" layoutY="97.0" mnemonicParsing="false" onAction="#fileEnDecryptChooseDirectories" prefHeight="26.0" prefWidth="120.0" text="directories..." />
+      <ScrollPane fx:id="fileEnDecryptInputScroll" hbarPolicy="NEVER" layoutX="309.0" layoutY="130.0" onKeyPressed="#onFileEnDecryptPaste" prefHeight="107.0" prefWidth="286.0">
+         <content>
+            <VBox fx:id="fileEnDecryptInputFiles" onDragDropped="#onFileEnDecryptDragNDrop" onDragOver="#onFileEnDecryptDragOver" prefHeight="105.0" prefWidth="282.0" />
+         </content>
+      </ScrollPane>
+      <TextField fx:id="fileEncryptOutputFile" editable="false" layoutX="310.0" layoutY="245.0" onKeyTyped="#keyTypedTooltip" onMouseExited="#mouseExitEntryTooltip" onMouseMoved="#mouseOverEntryTooltip" prefHeight="26.0" prefWidth="286.0" promptText="Encrypted File" />
+      <TextField fx:id="fileDecryptOutputFile" editable="false" layoutX="310.0" layoutY="277.0" onKeyTyped="#keyTypedTooltip" onMouseExited="#mouseExitEntryTooltip" onMouseMoved="#mouseOverEntryTooltip" prefHeight="27.0" prefWidth="286.0" promptText="Decrypted File" />
+      <Button fx:id="fileEncrypt" layoutX="329.0" layoutY="314.0" mnemonicParsing="false" onAction="#fileEncryptButton" prefHeight="26.0" prefWidth="76.0" text="Encrypt" />
+      <ImageView fx:id="fileEnDecryptLoadingImage" fitHeight="40.0" fitWidth="40.0" layoutX="432.0" layoutY="306.0" pickOnBounds="true" preserveRatio="true" />
+      <Button fx:id="fileDecrypt" layoutX="499.0" layoutY="314.0" mnemonicParsing="false" onAction="#fileDecryptButton" prefHeight="26.0" prefWidth="76.0" text="Decrypt" />
+      <Button fx:id="fileEnDecryptStop" layoutX="417.0" layoutY="345.0" mnemonicParsing="false" onAction="#fileEnDecryptCancelButton" prefHeight="26.0" prefWidth="68.0" text="Cancel" />
+      <Separator fx:id="fileEnDecryptSeparator1" layoutX="309.0" layoutY="379.0" prefHeight="8.0" prefWidth="103.0" />
+      <Text fx:id="fileEnDecryptAdvanced" layoutX="409.0" layoutY="387.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Advanced" textAlignment="CENTER" wrappingWidth="85.9" />
+      <Separator fx:id="fileEnDecryptSeparator2" layoutX="489.0" layoutY="379.0" prefHeight="8.0" prefWidth="103.0" />
+      <Text fx:id="fileEnDecryptAlgorithm" layoutX="484.0" layoutY="409.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Algorithm" textAlignment="CENTER" wrappingWidth="77.6" />
+      <TextField fx:id="fileEnDecryptSaltEntry" layoutX="311.0" layoutY="419.0" onKeyTyped="#keyTypedTooltip" onMouseExited="#mouseExitEntryTooltip" onMouseMoved="#mouseOverEntryTooltip" prefHeight="25.0" prefWidth="136.0" promptText="Salt" />
+      <ComboBox fx:id="fileEnDecryptAlgorithmBox" layoutX="455.0" layoutY="419.0" prefHeight="25.0" prefWidth="136.0" />
+      <Separator fx:id="midSeparator2" layoutX="600.0" layoutY="35.0" orientation="VERTICAL" prefHeight="424.0" prefWidth="0.0" />
+      <Text fx:id="fileDeleteText" layoutX="684.0" layoutY="49.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Secure delete files" textAlignment="CENTER" wrappingWidth="135.9" />
+      <Button fx:id="fileDeleteChooseFilesButton" layoutX="616.0" layoutY="64.0" mnemonicParsing="false" onAction="#fileDeleteChooseFiles" prefHeight="26.0" prefWidth="120.0" text="Choose files..." />
+      <Text layoutX="744.0" layoutY="81.0" scaleX="1.7" scaleY="1.7" scaleZ="1.7" strokeType="OUTSIDE" strokeWidth="0.0" text="/" textAlignment="CENTER" wrappingWidth="12.111118853092194" />
+      <Button fx:id="fileDeleteChooseDirectoriesButton" layoutX="764.0" layoutY="64.0" mnemonicParsing="false" onAction="#fileDeleteChooseDirectories" prefHeight="26.0" prefWidth="120.0" text="directories..." />
+      <ScrollPane fx:id="fileDeleteInputScroll" hbarPolicy="NEVER" layoutX="608.0" layoutY="100.0" prefHeight="228.0" prefWidth="285.0">
+         <content>
+            <VBox fx:id="fileDeleteInputFiles" onDragDropped="#onFileDeleteDragNDrop" onDragOver="#onFileDeleteDragOver" prefHeight="226.0" prefWidth="283.0" />
+         </content>
+      </ScrollPane>
+      <Button fx:id="fileDeleteButton" layoutX="646.0" layoutY="339.0" mnemonicParsing="false" onAction="#fileDelete" prefWidth="68.0" text="Delete" />
+      <ImageView fx:id="fileDeleteLoadingImage" fitHeight="40.0" fitWidth="40.0" layoutX="729.0" layoutY="332.0" pickOnBounds="true" preserveRatio="true" />
+      <Button fx:id="fileDeleteStop" layoutX="796.0" layoutY="339.0" mnemonicParsing="false" onAction="#fileDeleteCancelButton" prefWidth="68.0" text="Cancel" />
+      <Separator fx:id="fileDeleteSeparator1" layoutX="610.0" layoutY="379.0" prefHeight="8.0" prefWidth="103.0" />
+      <Text fx:id="fileDeleteAdvanced" layoutX="709.0" layoutY="387.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Advanced" textAlignment="CENTER" wrappingWidth="85.9" />
+      <Separator fx:id="fileDeleteSeparator2" layoutX="791.0" layoutY="379.0" prefHeight="8.0" prefWidth="103.0" />
+      <TextField fx:id="fileDeleteIterationsEntry" layoutX="684.0" layoutY="419.0" onKeyTyped="#keyTypedTooltip" onMouseExited="#mouseExitEntryTooltip" onMouseMoved="#mouseOverEntryTooltip" prefHeight="25.0" prefWidth="136.0" promptText="Iterations" text="5" />
+      <Text fx:id="version" fill="#0000006a" layoutX="-6.0" layoutY="465.0" scaleX="0.7" scaleY="0.7" strokeType="OUTSIDE" strokeWidth="0.0" text="v1.12.0" wrappingWidth="57.999987464019796">
+         <rotationAxis>
+            <Point3D />
+         </rotationAxis></Text>
+   </children>
+</AnchorPane>

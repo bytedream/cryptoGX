@@ -1,4 +1,4 @@
-package org.blueshard.cryptogx;
+package org.bytedream.cryptogx;
 
 import javax.crypto.*;
 import javax.crypto.spec.PBEKeySpec;

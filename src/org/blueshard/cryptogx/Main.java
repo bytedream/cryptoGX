@@ -1,5 +1,5 @@
 /*
- * @author blueShard
+ * @author bytedream
  * @version 1.12.0
  *
  * Some <code>@since</code> versions may be not correct, because the <code>@since</code> tag got added in
@@ -7,7 +7,7 @@
 
  */
 
-package org.blueshard.cryptogx;
+package org.bytedream.cryptogx;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;

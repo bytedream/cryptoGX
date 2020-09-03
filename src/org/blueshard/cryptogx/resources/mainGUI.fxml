@@ -6,7 +6,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<AnchorPane fx:id="rootWindow" prefHeight="470.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.blueshard.cryptogx.Controller">
+<AnchorPane fx:id="rootWindow" prefHeight="470.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.bytedream.cryptogx.Controller">
    <children>
       <MenuBar fx:id="menubar" prefHeight="25.0" prefWidth="900.0">
          <menus>

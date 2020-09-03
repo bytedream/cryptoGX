@@ -1,4 +1,4 @@
-package org.blueshard.cryptogx;
+package org.bytedream.cryptogx;
 
 import java.util.TreeMap;
 

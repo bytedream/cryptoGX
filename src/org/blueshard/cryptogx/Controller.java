@@ -1,4 +1,4 @@
-package org.blueshard.cryptogx;
+package org.bytedream.cryptogx;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -47,8 +47,8 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.blueshard.cryptogx.Settings.*;
-import static org.blueshard.cryptogx.Main.*;
+import static org.bytedream.cryptogx.Settings.*;
+import static org.bytedream.cryptogx.Main.*;
 
 public class Controller implements Initializable {
 

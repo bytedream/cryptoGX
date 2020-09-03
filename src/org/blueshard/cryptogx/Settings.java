@@ -1,4 +1,4 @@
-package org.blueshard.cryptogx;
+package org.bytedream.cryptoGX;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -23,7 +23,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.blueshard.cryptogx.Main.*;
+import static org.bytedream.cryptogx.Main.*;
 
 /**
  * <p>Class for the user configuration / settings</p>

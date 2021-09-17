@@ -1,3 +1,5 @@
+**please just use another encryption software which works correctly and has better en-/decoding options**
+
 **_cryptoGX_** - just another en- / decryption software
 
 - [Introduction](#introduction)
